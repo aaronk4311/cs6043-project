@@ -29,18 +29,29 @@
     <div class="container-sm py-md-3">
         <h2>Introduction</h2><hr>
         <p>
-            Chan's algorithm partitions the set of \(n\) points \(P\) into \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) groups of size at most \(m\) each. For each group \(P_1, P_2, ..., P_{\lceil n/m \rceil}\), we compute the convex hull. The figure below is an example with the outcome after this first step, i.e., we end up with four subsets of \(P\) each with \(\leq m\) points (and their individual hulls are constructed).<br>
+            <a href="https://en.wikipedia.org/wiki/Chan%27s_algorithm">Chan's algorithm</a> partitions the set of \(n\) points \(P\) into \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) groups of size at most \(m\) each. For each group \(P_1, P_2, ..., P_{\lceil n/m \rceil}\), we compute the convex hull. After the end of this step, we end up with \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) <i>mini</i> hulls. The figure below is an example with the outcome after this first step, i.e., we end up with four subsets of \(P\) each with \(\leq m\) points (and the mini hulls are constructed).<br>
             <!-- TODO: use picture from actual demo once that's working -->
-            <center><img src="images/fig1.png"></center>
+            <center><img src="images/fig1.png"></center><br>
 
             <!-- TODO: details in between -->
+
+            Now that we have the mini hulls, pick \(x_{max}\)
             
-            Overall, Chan's algorithm is divided into three stages:<br>
+            On a high-level overview, Chan's algorithm goes through the following steps to achieve a convex hull of \(P\):
             <ol>
                 <li>Parition \(P\) into \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) groups of size at most \(m\) each.</li>
                 <li>Use Graham's Scan to find the convex hull of each group.</li>
                 <li>Use Gift Wrapping to compute the convex hull of \(P\).</li>
             </ol>
+
+            Several questions:<br>
+            <ul>
+                <li>How do we pick \(m\)?</li>
+                <li>How do we start gift wrapping after computing the mini hulls?</li>
+                <li>How do the steps introduced above lead to an \(O(n \log h)\) time algorithm for constructing convex hulls?</li>
+            </ul>
+
+            In the following sections, we explain the algorithm as described in Chan's paper, provide visualizations for each step of the algorithm, mention alternative solutions for certain steps, and go over extensions proposed by Chan.
         </p>
     </div>
 
@@ -48,6 +59,13 @@
         <h2>The Algorithm</h2><hr>
         <p>
             Now that we've given a high-level overview of how Chan's algorithm runs, we now go into the details of how the algorithm ultimately constructs the convex hull in \(O(n \log h)\) time.
+        </p>
+    </div>
+
+    <div class="container-sm py-md-3">
+        <h2>Extensions</h2><hr>
+        <p>
+            
         </p>
     </div>
 
