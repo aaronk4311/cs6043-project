@@ -23,7 +23,11 @@ rect {
     stroke: black;
 }
 
-point {
+/* vertex {
     fill: black;
     stroke: none;
 }
+
+edge {
+    fill: black;
+} */

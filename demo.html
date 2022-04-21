@@ -18,64 +18,22 @@
         <nav class="container-sm">
             <div id="bdNavbar" class="collapse navbar-collapse">
                 <a class="navbar-brand" href="./">Home</a>
-
+                
                 <ul class="navbar-nav">
                     <li class="nav-item"><a class="nav-link" href="#">Demo</a></li>
                 </ul>
             </div>
         </nav>
     </header>
-
+    
+    <button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Previous Step</button>
+    <button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off">Next Step</button>
+    
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-
-    <!-- <canvas id="canvas" width="800" height="600"></canvas> -->
-
+    
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
-        // var width = screen.width, height = screen.height;
-        var width = 800, height = 600;
-        var xRange = d3.scaleLinear().range([0, width]), yRange = d3.scaleLinear().range([0, height]);
-        var pointsCount = 50;
-
-        xRange.domain([0, 100]);
-        yRange.domain([0, 100]);
-
-        var svg = d3.select("body").append("svg")
-            .attr("width", width)
-            .attr("height", height);
-
-        svg.append("rect")
-            // .attr("x", function(d) { return xRange(d) - width / 2 })
-            // .attr("y", function(d) { return yRange(d) - height / 2 })
-            .attr("width", width)
-            .attr("height", height);
-
-        function generateRandomPoints() {
-            var points = []
-
-            for (var i = 0; i < pointsCount; i++) {
-                var x = d3.randomUniform(0, 100)(), y = d3.randomUniform(0, 100)();
-                points.push({x, y});
-            }
-
-            return points;
-        }
-
-        function draw(data) {
-            var point = svg.selectAll("point");
-            point.data(data)
-                .enter().append("circle")
-                .attr("r", 5)
-                .attr("cx", function(d) { return xRange(d.x); })
-                .attr("cy", function(d) { return yRange(d.y); });
-        }
-
-        var points = generateRandomPoints();
-        // for (const point of points) {
-        //     console.log(point);
-        // }
-        draw(points);
-    </script>
+    <svg id="chan"></svg>
+    <script src="js/script.js"></script>
 </body>
 </html>
