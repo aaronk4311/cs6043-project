@@ -1,4 +1,4 @@
-// take the points that are coming in and find the one with the min y coord.
+type pointInfo = { distance: number; point: Point; };
 
 function chan(grid: Grid) {
   const { points } = grid;
@@ -54,19 +54,53 @@ function crossProduct(p1: Point, p2: Point, p3: Point): number {
   return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
 }
 
-// TODO update sorting to deal with colinear
+/**
+ * Find the {@link Point}, p1, according to {@link getP1} and sort the angles in ascending order
+ * with the angle each {@link Point} makes with {@link p1}
+ * @param points {@link Point[]}s
+ * @returns sorted {@link Point[]}s
+ */
 function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
   const p1 = getP1(points);
-  points.sort((a: Point, b: Point): number => {
-    return getSlope(p1, a) - getSlope(p1, b);
-  });
-  return points;
+  const pointsCache = points.reduce((pointsCache: { [key: number]: pointInfo }, point: Point) => {
+    const angle = getAngle(p1, point);
+    const distance = getDistanceBetweenPoints(p1, point);
+    const pointInfo = { point, distance };
+    if (!pointsCache[angle]) {
+      pointsCache[angle] = pointInfo;
+    } else if (pointsCache[angle].distance < distance) {
+      pointsCache[angle] = pointInfo;
+    }
+    return pointsCache;
+  }, {});
+  return Object.values(pointsCache).sort(({ point: p2 }, { point: p3 }) => {
+    return getAngle(p1, p2) - getAngle(p1, p3);
+  })
+    .map(a => a.point);
 }
 
-function getSlope(point1: Point, point2: Point): number {
-  return (point2.y - point1.y) / (point2.x - point1.x);
+function getDistanceBetweenPoints(p1: Point, p2: Point): number {
+  const deltaXSquared = Math.pow(p1.x - p2.x, 2);
+  const deltaYSquared = Math.pow(p1.y - p2.y, 2);
+  return Math.sqrt(deltaXSquared + deltaYSquared);
 }
 
+/**
+ * Find the angle two points make with the x axis
+ * @param point1 {@link Point}
+ * @param point2 {@link Point}
+ * @returns {@link number} angle
+ */
+function getAngle(point1: Point, point2: Point): number {
+  return Math.atan2(point2.y - point1.y, point2.x - point1.x)
+}
+
+/**
+ * Split a set of points in groups of size m.
+ * @param points {@link Point[]}
+ * @param m Group size
+ * @returns Array of arrays with size m
+ */
 function splitPoints(points: Point[], m: number): Point[][] {
   const result: Point[][] = [];
   for (let i = 0; i < points.length;) {
@@ -80,7 +114,13 @@ function splitPoints(points: Point[], m: number): Point[][] {
   return result;
 }
 
-// O(n) runtime
+/**
+ * Finds the {@link Point} with the minimum y coordinate.
+ * If two {@link Point} share the same min y coordinate, choose the one with the smaller x coordinate.
+ * O(n) runtime.
+ * @param points array of {@link Point[]}
+ * @returns {@link Point} with the minimum y coordinate.
+ */
 function getP1(points: Point[]): Point {
   let lowestYPoint = points[0];
   for (let i = 1; i < points.length; i++) {
