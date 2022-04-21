@@ -42,6 +42,7 @@ function getNextToTopOfStack(stack: Point[]): Point {
 }
 
 /**
+ * Find the cross product of 3 {@link Point}s
  * If the result is 0, the points are collinear.
  * If it is positive, the three points constitute a "left turn" or counter-clockwise orientation.
  * Otherwise a "right turn" or clockwise orientation (for counter-clockwise numbered points). 
@@ -56,7 +57,7 @@ function crossProduct(p1: Point, p2: Point, p3: Point): number {
 
 /**
  * Find the {@link Point}, p1, according to {@link getP1} and sort the angles in ascending order
- * with the angle each {@link Point} makes with {@link p1}
+ * by the angle each {@link Point} makes with {@link p1}
  * @param points {@link Point[]}s
  * @returns sorted {@link Point[]}s
  */
@@ -79,6 +80,12 @@ function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
     .map(a => a.point);
 }
 
+/**
+ * Find the distance between two {@link Point}s
+ * @param p1 {@link Point} 1
+ * @param p2 {@link Point} 2
+ * @returns {@link number} distance between {@param p1} and {@param p2}
+ */
 function getDistanceBetweenPoints(p1: Point, p2: Point): number {
   const deltaXSquared = Math.pow(p1.x - p2.x, 2);
   const deltaYSquared = Math.pow(p1.y - p2.y, 2);
@@ -86,7 +93,7 @@ function getDistanceBetweenPoints(p1: Point, p2: Point): number {
 }
 
 /**
- * Find the angle two points make with the x axis
+ * Find the angle that two points make with the x axis
  * @param point1 {@link Point}
  * @param point2 {@link Point}
  * @returns {@link number} angle
@@ -97,6 +104,7 @@ function getAngle(point1: Point, point2: Point): number {
 
 /**
  * Split a set of points in groups of size m.
+ * O(n) runtime
  * @param points {@link Point[]}
  * @param m Group size
  * @returns Array of arrays with size m
@@ -116,7 +124,7 @@ function splitPoints(points: Point[], m: number): Point[][] {
 
 /**
  * Finds the {@link Point} with the minimum y coordinate.
- * If two {@link Point} share the same min y coordinate, choose the one with the smaller x coordinate.
+ * If two {@link Point}s share the same y coordinate, choose the one with the smaller x coordinate.
  * O(n) runtime.
  * @param points array of {@link Point[]}
  * @returns {@link Point} with the minimum y coordinate.
