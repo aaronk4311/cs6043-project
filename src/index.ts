@@ -72,7 +72,7 @@ function jarvisBinary(points: Point[], p1: Point, p2: Point) {
 }
 
 function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
-  return getAngle(p2, p2) - getAngle(p2, p1);
+  return getAngle(p2, p3) - getAngle(p2, p1);
 }
 
 /**
