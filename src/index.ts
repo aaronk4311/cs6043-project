@@ -1,6 +1,6 @@
 type pointInfo = { distance: number; point: Point; };
 
-function chan(grid: Grid) {
+export function chan(grid: Grid) {
   const { points } = grid;
   const p0 = new Point(-Infinity, 0);
   const p1 = getP1(grid.points);
@@ -25,11 +25,11 @@ function chan(grid: Grid) {
   }
 }
 
-function arePointsEqual(p1: Point, p2: Point): boolean {
+export function arePointsEqual(p1: Point, p2: Point): boolean {
   return p1.x === p2.x && p1.y === p2.y;
 }
 
-function jarvisMarch(pointsArray: Point[][], hullPoints: Point[], m: number) {
+export function jarvisMarch(pointsArray: Point[][], hullPoints: Point[], m: number) {
   for (let i = 0; i < m; i++) {
     let currentBest: {angle: number; point: Point} = null;
     for (let k = 0; k < pointsArray.length; k++) {
@@ -47,7 +47,7 @@ function jarvisMarch(pointsArray: Point[][], hullPoints: Point[], m: number) {
   }
 }
 
-function jarvisBinary(points: Point[], p1: Point, p2: Point) {
+export function jarvisBinary(points: Point[], p1: Point, p2: Point) {
   // TODO check that we are not testing against one of the current angles
   let left = 0;
   let right = points.length - 1;
@@ -71,7 +71,7 @@ function jarvisBinary(points: Point[], p1: Point, p2: Point) {
   }
 }
 
-function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
+export function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
   return getAngle(p2, p3) - getAngle(p2, p1);
 }
 
@@ -81,7 +81,7 @@ function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
  * @param points Array of {@link Point}s
  * @returns Array of {@link Point}s representing the convex hall
  */
-function grahamScan(points: Point[]): Point[] {
+export function grahamScan(points: Point[]): Point[] {
   const sortedPoints = sortInOrderOfAngleWithP1(points);
   const hullStack = [];
   for (let i = 0; i < sortedPoints.length; i++) {
@@ -96,10 +96,10 @@ function grahamScan(points: Point[]): Point[] {
   return hullStack;
 }
 
-function getTopOfStack(stack: Point[]): Point {
+export function getTopOfStack(stack: Point[]): Point {
   return stack[stack.length - 1];
 }
-function getNextToTopOfStack(stack: Point[]): Point {
+export function getNextToTopOfStack(stack: Point[]): Point {
   return stack[stack.length - 2];
 }
 
@@ -113,7 +113,7 @@ function getNextToTopOfStack(stack: Point[]): Point {
  * @param p3 {@link Point} point3
  * @returns {@link number} Cross product of vectors P1P2 and P1P3
  */
-function crossProduct(p1: Point, p2: Point, p3: Point): number {
+export function crossProduct(p1: Point, p2: Point, p3: Point): number {
   return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
 }
 
@@ -123,7 +123,7 @@ function crossProduct(p1: Point, p2: Point, p3: Point): number {
  * @param points {@link Point[]}s
  * @returns sorted {@link Point[]}s
  */
-function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
+export function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
   const p1 = getP1(points);
   const pointsCache = points.reduce((pointsCache: { [key: number]: pointInfo }, point: Point) => {
     const angle = getAngle(p1, point);
@@ -148,7 +148,7 @@ function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
  * @param p2 {@link Point} 2
  * @returns {@link number} distance between {@param p1} and {@param p2}
  */
-function getDistanceBetweenPoints(p1: Point, p2: Point): number {
+export function getDistanceBetweenPoints(p1: Point, p2: Point): number {
   const deltaXSquared = Math.pow(p1.x - p2.x, 2);
   const deltaYSquared = Math.pow(p1.y - p2.y, 2);
   return Math.sqrt(deltaXSquared + deltaYSquared);
@@ -160,7 +160,7 @@ function getDistanceBetweenPoints(p1: Point, p2: Point): number {
  * @param point2 {@link Point}
  * @returns {@link number} angle
  */
-function getAngle(point1: Point, point2: Point): number {
+export function getAngle(point1: Point, point2: Point): number {
   return Math.atan2(point2.y - point1.y, point2.x - point1.x)
 }
 
@@ -171,7 +171,7 @@ function getAngle(point1: Point, point2: Point): number {
  * @param m Group size
  * @returns Array of arrays with size m
  */
-function splitPoints(points: Point[], m: number): Point[][] {
+export function splitPoints(points: Point[], m: number): Point[][] {
   const result: Point[][] = [];
   for (let i = 0; i < points.length;) {
     const temp: Point[] = [];
@@ -191,7 +191,7 @@ function splitPoints(points: Point[], m: number): Point[][] {
  * @param points array of {@link Point[]}
  * @returns {@link Point} with the minimum y coordinate.
  */
-function getP1(points: Point[]): Point {
+export function getP1(points: Point[]): Point {
   let lowestYPoint = points[0];
   for (let i = 1; i < points.length; i++) {
     if (points[i].y < lowestYPoint.y) {
