@@ -1,4 +1,7 @@
-type pointInfo = { distance: number; point: Point; };
+type pointInfo = {
+  distance: number;
+  point: Point;
+};
 
 export function chan(grid: Grid) {
   const { points } = grid;
@@ -206,7 +209,7 @@ export function getP1(points: Point[]): Point {
 }
 
 
-class Grid {
+export class Grid {
   public points: Point[];
 
   constructor() {
@@ -225,7 +228,7 @@ class Grid {
   }
 }
 
-class Point {
+export class Point {
   public readonly x: number;
   public readonly y: number;
 
