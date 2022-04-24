@@ -1,4 +1,4 @@
-import { getAngle, getDistanceBetweenPoints, getP1, Grid, Point, splitPoints } from '../src';
+import { getAngle, getDistanceBetweenPoints, getP1, Grid, Point, sortInOrderOfAngleWithP1, splitPoints } from '../src';
 
 beforeEach(() => {
 
@@ -56,27 +56,27 @@ describe('index', () => {
       .addPoint(1, 2)
       .addPoint(2, 3)
       .addPoint(4, 5)
-      test('split into groups of 1', () => {
-        const results = splitPoints(grid.points, 1);
-        expect(results.length).toBe(3);
-        for (let i = 0; i < results.length -1; i++) {
-          expect(results[i].length).toBe(1);
-        }
-        expect(results[results.length - 1].length).toBe(1);
-      });
-      test('Split into groups of 2', () => {
-        const results = splitPoints(grid.points, 2);
-        expect(results.length).toBe(2);
-        for (let i = 0; i < results.length -1; i++) {
-          expect(results[i].length).toBe(2);
-        }
-        expect(results[results.length - 1].length).toBe(1);
-      });
-      test('Split into groups of 3', () => {
-        const results = splitPoints(grid.points, 3);
-        expect(results.length).toBe(1);
-        expect(results[results.length - 1].length).toBe(3);
-      });
+    test('split into groups of 1', () => {
+      const results = splitPoints(grid.points, 1);
+      expect(results.length).toBe(3);
+      for (let i = 0; i < results.length - 1; i++) {
+        expect(results[i].length).toBe(1);
+      }
+      expect(results[results.length - 1].length).toBe(1);
+    });
+    test('Split into groups of 2', () => {
+      const results = splitPoints(grid.points, 2);
+      expect(results.length).toBe(2);
+      for (let i = 0; i < results.length - 1; i++) {
+        expect(results[i].length).toBe(2);
+      }
+      expect(results[results.length - 1].length).toBe(1);
+    });
+    test('Split into groups of 3', () => {
+      const results = splitPoints(grid.points, 3);
+      expect(results.length).toBe(1);
+      expect(results[results.length - 1].length).toBe(3);
+    });
   });
   describe('getAngle', () => {
     test('Calculate right angle', () => {
@@ -95,13 +95,25 @@ describe('index', () => {
       const point1 = new Point(0, 0);
       const point2 = new Point(-1, -1);
       const angle = getAngle(point1, point2);
-      expect(angle).toBe(-135);
+      expect(angle).toBe(135);
     });
     test('Calculate horizonotal line', () => {
       const point1 = new Point(0, 0);
       const point2 = new Point(1, 0);
       const angle = getAngle(point1, point2);
       expect(angle).toBe(0);
+    });
+    test('Greater than 45', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(1, 2);
+      const angle = getAngle(point1, point2);
+      expect(angle).toBe(63.43494882292201);
+    });
+    test('Greater than 135', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(-1, -2);
+      const angle = getAngle(point1, point2);
+      expect(angle).toBe(116.56505117707799);
     });
   });
 
@@ -118,5 +130,32 @@ describe('index', () => {
       const distance = getDistanceBetweenPoints(point1, point2);
       expect(distance).toBe(Math.sqrt(2));
     });
+    test('Backwards right angle', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(-1, -1);
+      const distance = getDistanceBetweenPoints(point1, point2);
+      expect(distance).toBe(Math.sqrt(2));
+    });
+  });
+  describe('sortInOrderOfAngleWithP1', () => {
+    test('Sort as expected', () => {
+      const grid = new Grid()
+        .addPoint(0, 1)
+        .addPoint(1, 1)
+        .addPoint(-1, 1)
+        .addPoint(0, 0)
+        .addPoint(-1, 0.01);
+      const results = sortInOrderOfAngleWithP1(grid.points);
+      expect(results.length).toBe(5);
+      expect(results[0]).toStrictEqual(new Point(0, 0));
+      expect(results[1]).toStrictEqual(new Point(1, 1));
+      expect(results[2]).toStrictEqual(new Point(0, 1));
+      expect(results[3]).toStrictEqual(new Point(-1, 1));
+      expect(results[4]).toStrictEqual(new Point(-1, 0.01));
+    });
+  });
+
+  describe('crossProduct', () => {
+
   });
 });

@@ -164,7 +164,8 @@ export function getDistanceBetweenPoints(p1: Point, p2: Point): number {
  * @returns {@link number} angle
  */
 export function getAngle(point1: Point, point2: Point): number {
-  return Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+  const angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+  return Math.abs(angle);
 }
 
 /**
