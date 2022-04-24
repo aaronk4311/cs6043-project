@@ -72,7 +72,6 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
       continue;
     }
     const angle = getAngleBetween3Points(p1, p2, point);
-    // we want the angle closest to 0, but not less.
     if (right <= left) {
       return { point, angle };
     }
@@ -87,7 +86,7 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
       rightNeighborAngle = getAngleBetween3Points(p1, p2, hull[idx + 1]);
     }
     if (leftNeighborAngle !== null
-      && leftNeighborAngle < angle) { // go left
+      && leftNeighborAngle < angle) {
       right = idx - 1;
     } else if (rightNeighborAngle !== null
       && rightNeighborAngle < angle) {
