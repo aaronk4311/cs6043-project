@@ -5,8 +5,8 @@ type pointInfo = {
 
 export function chan(grid: Grid) {
   const { points } = grid;
-  const p0 = new Point(-Infinity, 0);
   const p1 = getP1(grid.points);
+  const p0 = new Point(p1.x - 1, p1.y);
   const n = points.length;
 
   for (let i = 1; i <= Math.log2(Math.log2(n)); i++) {
@@ -32,50 +32,78 @@ export function arePointsEqual(p1: Point, p2: Point): boolean {
   return p1.x === p2.x && p1.y === p2.y;
 }
 
-export function jarvisMarch(pointsArray: Point[][], hullPoints: Point[], m: number) {
+export function jarvisMarch(grahamHulls: Point[][], hullPoints: Point[], m: number) {
   for (let i = 0; i < m; i++) {
-    let currentBest: {angle: number; point: Point} = null;
-    for (let k = 0; k < pointsArray.length; k++) {
-      const bestOfGroup = jarvisBinary(pointsArray[k], 
+    let currentBest: { angle: number; point: Point } = null;
+    for (let k = 0; k < grahamHulls.length; k++) {
+      const bestOfGroup = jarvisBinary(grahamHulls[k],
         getNextToTopOfStack(hullPoints), getTopOfStack(hullPoints));
-        if (!currentBest) {
-          currentBest = bestOfGroup;
-          continue;
-        }
-        if (currentBest.angle < bestOfGroup.angle) {
-          currentBest = bestOfGroup;
-        }
+      if (!currentBest) {
+        currentBest = bestOfGroup;
+        continue;
+      }
+      if (currentBest.angle < bestOfGroup.angle) {
+        currentBest = bestOfGroup;
+      }
     }
     hullPoints.push(currentBest.point);
   }
 }
 
-export function jarvisBinary(points: Point[], p1: Point, p2: Point) {
-  // TODO check that we are not testing against one of the current angles
-  let left = 0;
-  let right = points.length - 1;
-  while (true) {
-    const idx = Math.ceil((right + left) / 2);
-    const point = points[idx];
-    const angle = getAngleBetween3Points(p1, p2, point);
-    if (left === right) {
-      return { point, angle };
-    }
-    const leftNeighborAngle = getAngleBetween3Points(p1, p2, points[idx - 1]);
-    const rightNeighborAngle = getAngleBetween3Points(p1, p2, points[idx + 1]);
-    if (angle >= leftNeighborAngle && angle >= rightNeighborAngle) {
-      return { point: points[idx], angle };
-    }
-    if (leftNeighborAngle > angle) {
-      right = idx - 1;
-    } else {
-      left = idx + 1;
-    }
-  }
+function isequalToP1OrP2(p1, p2, p3): boolean {
+  return arePointsEqual(p1, p3) || arePointsEqual(p2, p3);
 }
 
-export function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
-  return getAngle(p2, p3) - getAngle(p2, p1);
+/**
+ * 
+ * @param points 
+ * @param p1 
+ * @param p2 
+ * @returns 
+ */
+export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
+  let left = 0;
+  let right = hull.length - 1;
+  while (true) {
+    const idx = Math.ceil((right + left) / 2);
+    const point = hull[idx];
+    if (isequalToP1OrP2(p1, p2, point) ) {
+      left = idx + 1;
+      continue;
+    }
+    const angle = crossProduct(p1, p2, point);
+    // we want the angle closest to 0, but not less.
+    if (right <= left) {
+      return { point, angle };
+    }
+    let leftNeighborAngle = null;
+    let rightNeighborAngle = null;
+    let leftIndex = idx - 1;
+    let rightIndex = idx + 1;
+    if (leftIndex >= left && !isequalToP1OrP2(p1, p2, hull[leftIndex])) {
+      leftNeighborAngle = crossProduct(p1, p2, hull[idx - 1]);
+    } else {
+      left = idx;
+      continue;
+    }
+    if (rightIndex <= right && !isequalToP1OrP2(p1, p2, hull[rightIndex])) {
+      rightNeighborAngle = crossProduct(p1, p2, hull[idx + 1]);
+    } else {
+      right = idx;
+      continue;
+    }
+    if (leftNeighborAngle !== null
+      && leftNeighborAngle < angle
+      && leftNeighborAngle >= 0) { // go left
+      right = idx - 1;
+    } else if (rightNeighborAngle !== null
+      && rightNeighborAngle < angle
+      && rightNeighborAngle >= 0) {
+      left = idx + 1;
+    } else {
+      return { point: hull[idx], angle };
+    }
+  }
 }
 
 /**
@@ -128,21 +156,16 @@ export function crossProduct(p1: Point, p2: Point, p3: Point): number {
  */
 export function sortInOrderOfAngleWithP1(points: Point[]): Point[] {
   const p1 = getP1(points);
-  const pointsCache = points.reduce((pointsCache: { [key: number]: pointInfo }, point: Point) => {
-    const angle = getAngle(p1, point);
-    const distance = getDistanceBetweenPoints(p1, point);
-    const pointInfo = { point, distance };
-    if (!pointsCache[angle]) {
-      pointsCache[angle] = pointInfo;
-    } else if (pointsCache[angle].distance < distance) {
-      pointsCache[angle] = pointInfo;
+  return points.sort((p2, p3) => {
+    const angle1 = getAngle(p1, p2);
+    const angle2 = getAngle(p1, p3);
+    if (angle1 !== angle2) {
+      return angle1 - angle2;
     }
-    return pointsCache;
-  }, {});
-  return Object.values(pointsCache).sort(({ point: p2 }, { point: p3 }) => {
-    return getAngle(p1, p2) - getAngle(p1, p3);
-  })
-    .map(a => a.point);
+    const distance1 = getDistanceBetweenPoints(p1, p2);
+    const distance2 = getDistanceBetweenPoints(p1, p3);
+    return distance1 - distance2;
+  });
 }
 
 /**

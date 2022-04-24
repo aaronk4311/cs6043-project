@@ -1,8 +1,17 @@
-import { getAngle, getDistanceBetweenPoints, getP1, Grid, Point, sortInOrderOfAngleWithP1, splitPoints } from '../src';
-
-beforeEach(() => {
-
-});
+import {
+  crossProduct,
+  getAngle,
+  getDistanceBetweenPoints,
+  getNextToTopOfStack,
+  getP1,
+  getTopOfStack,
+  grahamScan,
+  Grid,
+  jarvisBinary,
+  Point,
+  sortInOrderOfAngleWithP1,
+  splitPoints,
+} from '../src';
 
 describe('index', () => {
   describe('Point', () => {
@@ -144,18 +153,143 @@ describe('index', () => {
         .addPoint(1, 1)
         .addPoint(-1, 1)
         .addPoint(0, 0)
+        .addPoint(1, 0)
         .addPoint(-1, 0.01);
       const results = sortInOrderOfAngleWithP1(grid.points);
-      expect(results.length).toBe(5);
+      expect(results.length).toBe(6);
       expect(results[0]).toStrictEqual(new Point(0, 0));
-      expect(results[1]).toStrictEqual(new Point(1, 1));
-      expect(results[2]).toStrictEqual(new Point(0, 1));
-      expect(results[3]).toStrictEqual(new Point(-1, 1));
-      expect(results[4]).toStrictEqual(new Point(-1, 0.01));
+      expect(results[1]).toStrictEqual(new Point(1, 0));
+      expect(results[2]).toStrictEqual(new Point(1, 1));
+      expect(results[3]).toStrictEqual(new Point(0, 1));
+      expect(results[4]).toStrictEqual(new Point(-1, 1));
+      expect(results[5]).toStrictEqual(new Point(-1, 0.01));
     });
   });
 
   describe('crossProduct', () => {
+    test('colinear', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(1, 0);
+      const point3 = new Point(2, 0);
+      const result = crossProduct(point1, point2, point3);
+      expect(result).toBe(0);
+    });
+    test('left turn', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(1, 0);
+      const point3 = new Point(2, 2);
+      const result = crossProduct(point1, point2, point3);
+      expect(result).toBe(2);
+    });
+    test('right turn', () => {
+      const point1 = new Point(0, 0);
+      const point2 = new Point(1, 0);
+      const point3 = new Point(-2, -2);
+      const result = crossProduct(point1, point2, point3);
+      expect(result).toBe(-2);
+    });
+  });
+  describe('stack', () => {
+    const stack = [1, 2];
+    test('getNextToTopOfStack', () => {
+      const result = getNextToTopOfStack(stack as any);
+      expect(result).toBe(1);
+    });
+    test('getTopOfStack', () => {
+      const result = getTopOfStack(stack as any);
+      expect(result).toBe(2);
+    });
+  });
+  describe('grahamScan', () => {
+    test('construct hull', () => {
+      const grid = new Grid()
+        .addPoint(1, 1)
+        .addPoint(1.5, 1)
+        .addPoint(1.9, 1.3)
+        .addPoint(0, 2)
+        .addPoint(2, 2)
+        .addPoint(0, 0)
+        .addPoint(2, 0);
+      const results = grahamScan(grid.points);
+      expect(results.length).toBe(4);
+      expect(results[0]).toStrictEqual(new Point(0, 0));
+      expect(results[1]).toStrictEqual(new Point(2, 0));
+      expect(results[2]).toStrictEqual(new Point(2, 2));
+      expect(results[3]).toStrictEqual(new Point(0, 2));
+    });
+  });
+  describe('jarvisBinary', () => {
+    test('test even', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(2, 0)
+        .addPoint(2, 2)
+        .addPoint(0, 2);
+      const p1 = new Point(0, 0);
+      const p0 = new Point(p1.x - 1, p1.y);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(2, 0));
+    });
+    test('test odd', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+      const p1 = new Point(0, 0);
+      const p0 = new Point(p1.x - 1, p1.y);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(4, 1));
+    });
+    test('3', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+        const p0 = new Point(0, 0);
+        const p1 = new Point(4, 1);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(4, 2));
+    });
 
+    test('4', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+        const p0 = new Point(4, 1);
+        const p1 = new Point(4, 2);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(3, 3));
+    });
+    test('5', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+        const p0 = new Point(4, 2);
+        const p1 = new Point(3, 3);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(0, 4));
+    });
+    test('6', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+        const p0 = new Point(3, 3);
+        const p1 = new Point(0, 4);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(0, 0));
+    });
   });
 });
