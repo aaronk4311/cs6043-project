@@ -71,7 +71,7 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
       left = idx + 1;
       continue;
     }
-    const angle = crossProduct(p1, p2, point);
+    const angle = getAngleBetween3Points(p1, p2, point);
     // we want the angle closest to 0, but not less.
     if (right <= left) {
       return { point, angle };
@@ -81,29 +81,26 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
     let leftIndex = idx - 1;
     let rightIndex = idx + 1;
     if (leftIndex >= left && !isequalToP1OrP2(p1, p2, hull[leftIndex])) {
-      leftNeighborAngle = crossProduct(p1, p2, hull[idx - 1]);
-    } else {
-      left = idx;
-      continue;
+      leftNeighborAngle = getAngleBetween3Points(p1, p2, hull[idx - 1]);
     }
     if (rightIndex <= right && !isequalToP1OrP2(p1, p2, hull[rightIndex])) {
-      rightNeighborAngle = crossProduct(p1, p2, hull[idx + 1]);
-    } else {
-      right = idx;
-      continue;
+      rightNeighborAngle = getAngleBetween3Points(p1, p2, hull[idx + 1]);
     }
     if (leftNeighborAngle !== null
-      && leftNeighborAngle < angle
-      && leftNeighborAngle >= 0) { // go left
+      && leftNeighborAngle < angle) { // go left
       right = idx - 1;
     } else if (rightNeighborAngle !== null
-      && rightNeighborAngle < angle
-      && rightNeighborAngle >= 0) {
+      && rightNeighborAngle < angle) {
       left = idx + 1;
     } else {
       return { point: hull[idx], angle };
     }
   }
+}
+
+function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
+  return Math.atan2(p3.y - p2.y, p3.x - p2.x) - 
+  Math.atan2(p2.y - p1.y, p2.x - p1.x);
 }
 
 /**
