@@ -3,5 +3,8 @@
     "target": "es2022",
     "module": "commonjs",
     "outDir": "build"
-  }
+  },
+  "include": [
+    "src/*.ts"
+  ]
 }
