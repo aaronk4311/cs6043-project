@@ -6,7 +6,7 @@ exports.Point = exports.generateRandomPoints = exports.getP1 = exports.splitPoin
 
 var width = 800, height = 600;
 var xRange = d3.scaleLinear().range([0, width]), yRange = d3.scaleLinear().range([0, height]);
-var vertexCount = 50;
+var vertexCount = 30;
 
 xRange.domain([0, width]);
 yRange.domain([0, height]);
@@ -297,7 +297,6 @@ function jarvisMarch(points, miniHulls, m) {
 
         let left = 0, right = hull.length - 1;
         while (true) {
-
             const mid1 = Math.ceil((left + right) / 2) % hullPointsCount, mid2 = (mid1 + Math.ceil(hullPointsCount / 2)) % hullPointsCount;
             const v1 = hull[mid1], v2 = hull[mid2];
 
@@ -310,20 +309,30 @@ function jarvisMarch(points, miniHulls, m) {
             console.log(p0, p1, '\n', v1, v2, '\n', left, right, '\n', v1PrevTurn, v1NextTurn, '\n', v2PrevTurn, v2NextTurn);
 
 
-            // note below, that for some reason, the parity is flipped when taking the cross product, e.g., turning left yields a cross product < 0, rather than > 0 as expected.
+            // note below, that for some reason, the parity is flipped when taking the cross product, e.g., turning left yields a cross product < 0, rather than > 0.
 
             // found hull point
             if (v1PrevTurn <= 0 && v1NextTurn < 0) {
                 return {point: v1, angle: p1 != v1 ? getAngleBetween3Points(p0, p1, v1) : -Infinity};
             }
-            if (v2PrevTurn <= 0 && v2NextTurn < 0) {
+            else if (v2PrevTurn <= 0 && v2NextTurn < 0) {
                 return {point: v2, angle: p1 != v2 ? getAngleBetween3Points(p0, p1, v2) : -Infinity};
             }
 
             if (v1PrevTurn === 0 && v1NextTurn === 0) {         // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
+                if (hullPointsCount === 2) {
+                    const retPoint = (p1 === v1Next ? v1 : v1Next);
+                    return {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint)};
+                }
+
                 return {point: v1Next, angle: p1 != v1Next ? getAngleBetween3Points(p0, p1, v1Next) : -Infinity};
             }
             else if (v2PrevTurn === 0 && v2NextTurn === 0) {    // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
+                if (hullPointsCount === 2) {
+                    const retPoint = (p1 === v2Next ? v2 : v2Next);
+                    return {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint)};
+                }
+
                 return {point: v2Next, angle: p1 != v2Next ? getAngleBetween3Points(p0, p1, v2Next) : -Infinity};
             }
 
@@ -339,7 +348,6 @@ function jarvisMarch(points, miniHulls, m) {
 
             // mid1point hidden, midpoint2 hidden
             else if ((v1PrevTurn > 0 && v1NextTurn < 0) && (v2PrevTurn > 0 && v2NextTurn < 0)) {
-
                 if (getTurnDirection(v2, v1, p1) > 0) { // TODO: what about collinear points?
                     right = (((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount;
                 }
@@ -349,9 +357,7 @@ function jarvisMarch(points, miniHulls, m) {
             }
 
             // midpoint1 illuminated / upper tangent, midpoint2 illuminated / upper tangent
-            else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn > 0)) 
-                && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn > 0))) {
-
+            else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn > 0)) && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn > 0))) {
                 if (getTurnDirection(v2, v1, p1) > 0) {
                     left = (mid1 + 1) % hullPointsCount;
                 }
@@ -443,3 +449,11 @@ function chan(points) {
 exports.chan = chan;
 
 console.log(chan(generateRandomPoints()));
+// console.log(chan([
+//     new Point(561.0186441200046, 258.79163502845876),
+//     new Point(343.84164270241865, 113.3201788100564),
+//     new Point(137.96509417265491, 95.58456901592906),
+//     new Point(256.6014733967901, 171.6740244508393),
+//     new Point(218.48190203636653, 566.9144879495522),
+//     new Point(669.4804825134775, 356.5154520520068)
+// ]));
