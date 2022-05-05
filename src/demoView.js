@@ -73,8 +73,16 @@ var endStep = navContainer.append("button")
     .attr("id", "end-step")
     .attr("type", "button")
     .attr("class", "btn btn-primary")
+    .attr("style", "margin-right:20px")
     .attr("disabled", true)
     .text(">>");
+
+var autorun = navContainer.append("button")
+    .attr("id", "autorun")
+    .attr("type", "button")
+    .attr("class", "btn btn-primary")
+    .attr("disabled", true)
+    .text("Autorun")
 
 var demoOutput = demoContainer.append("svg")
     .attr("class", "demo-output")
@@ -180,5 +188,32 @@ endStepBtn.onclick = function(event) {
     document.getElementById("end-step").disabled = true;
     document.getElementById("prev-step").disabled = false;
     document.getElementById("start-step").disabled = false;
+}
+
+var autorunBtn = document.getElementById("autorun");
+const timer = ms => new Promise(res => setTimeout(res, ms));
+autorunBtn.onclick = async function(event) {
+    event.preventDefault();
+
+    document.getElementById("next-step").disabled = true;
+    document.getElementById("end-step").disabled = true;
+    document.getElementById("prev-step").disabled = true;
+    document.getElementById("start-step").disabled = true;
+
+    document.getElementById("vertex-count-form-submit").disabled = true;
+    document.getElementById("autorun").disabled = true;
+
+    while (stepIdx < states.length) {
+        renderState(states[stepIdx]);
+        stepIdx++;
+        await timer(200);
+    }
+
+    stepIdx--;
+    document.getElementById("prev-step").disabled = false;
+    document.getElementById("start-step").disabled = false;
+
+    document.getElementById("vertex-count-form-submit").disabled = false;
+    document.getElementById("autorun").disabled = false;
 }
 // end step through algorithm

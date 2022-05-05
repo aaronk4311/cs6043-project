@@ -258,6 +258,7 @@ vertexCountFormSubmit.onclick = function(event) {
     document.getElementById("end-step").disabled = false;
     document.getElementById("prev-step").disabled = true;
     document.getElementById("start-step").disabled = true;
+    document.getElementById("autorun").disabled = false;
 
     states = [];
     clearRender();
