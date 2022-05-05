@@ -1,4 +1,6 @@
 import {
+  arePointsEqual,
+  chan,
   crossProduct,
   getAngle,
   getDistanceBetweenPoints,
@@ -8,6 +10,7 @@ import {
   grahamScan,
   Grid,
   jarvisBinary,
+  jarvisMarch,
   Point,
   sortInOrderOfAngleWithP1,
   splitPoints,
@@ -249,8 +252,8 @@ describe('index', () => {
         .addPoint(4, 2)
         .addPoint(3, 3)
         .addPoint(0, 4);
-        const p0 = new Point(0, 0);
-        const p1 = new Point(4, 1);
+      const p0 = new Point(0, 0);
+      const p1 = new Point(4, 1);
       const result = jarvisBinary(grid.points, p0, p1);
       expect(result.point).toStrictEqual(new Point(4, 2));
     });
@@ -262,8 +265,8 @@ describe('index', () => {
         .addPoint(4, 2)
         .addPoint(3, 3)
         .addPoint(0, 4);
-        const p0 = new Point(4, 1);
-        const p1 = new Point(4, 2);
+      const p0 = new Point(4, 1);
+      const p1 = new Point(4, 2);
       const result = jarvisBinary(grid.points, p0, p1);
       expect(result.point).toStrictEqual(new Point(3, 3));
     });
@@ -274,8 +277,8 @@ describe('index', () => {
         .addPoint(4, 2)
         .addPoint(3, 3)
         .addPoint(0, 4);
-        const p0 = new Point(4, 2);
-        const p1 = new Point(3, 3);
+      const p0 = new Point(4, 2);
+      const p1 = new Point(3, 3);
       const result = jarvisBinary(grid.points, p0, p1);
       expect(result.point).toStrictEqual(new Point(0, 4));
     });
@@ -286,10 +289,133 @@ describe('index', () => {
         .addPoint(4, 2)
         .addPoint(3, 3)
         .addPoint(0, 4);
-        const p0 = new Point(3, 3);
-        const p1 = new Point(0, 4);
+      const p0 = new Point(3, 3);
+      const p1 = new Point(0, 4);
       const result = jarvisBinary(grid.points, p0, p1);
       expect(result.point).toStrictEqual(new Point(0, 0));
     });
+    test('7', () => {
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(4, 1)
+        .addPoint(4, 2)
+        .addPoint(3, 3)
+        .addPoint(0, 4);
+      const p0 = new Point(0, 4);
+      const p1 = new Point(0, 0);
+      const result = jarvisBinary(grid.points, p0, p1);
+      expect(result.point).toStrictEqual(new Point(4, 1));
+    });
   });
+  describe('arePointsEqual', () => {
+    test('points are equal', () => {
+      const point1 = new Point(1, 1);
+      const point2 = new Point(1, 1);
+      const result = arePointsEqual(point1, point2);
+      expect(result).toBe(true);
+    });
+    test('points are not equal', () => {
+      const point1 = new Point(1, 1);
+      const point2 = new Point(1, 2);
+      const result = arePointsEqual(point1, point2);
+      expect(result).toBe(false);
+    });
+  });
+  describe('jarvisMarch', () => {
+    let p0;
+    let p1;
+    let hull;
+    let grahamHull1;
+    let grahamHull2;
+    let grahamHull3;
+    let grahamHulls;
+
+    beforeEach(() => {
+      p0 = new Point(-1, 0);
+      p1 = new Point(0, 0);
+      hull = [p0, p1];
+      grahamHull1 = new Grid()
+        .addPoint(0, 0)
+        .addPoint(1, 0)
+        .addPoint(1, 1)
+        .addPoint(0, 1);
+      grahamHull2 = new Grid()
+        .addPoint(2, 0)
+        .addPoint(3, 0)
+        .addPoint(3, 1)
+        .addPoint(2, 1)
+      grahamHull3 = new Grid()
+        .addPoint(1, 1)
+        .addPoint(2, 1)
+        .addPoint(2, 2)
+        .addPoint(1, 2);
+      grahamHulls = [
+        grahamHull1.points,
+        grahamHull2.points,
+        grahamHull3.points
+      ];
+    });
+    test('Find the expected hull when m = 1', () => {  
+      jarvisMarch(grahamHulls, hull, 1);
+      expect(hull.length).toBe(3);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(1, 0));
+    });
+    test('Find the expected hull when m = 2', () => {  
+      jarvisMarch(grahamHulls, hull, 2);
+      expect(hull.length).toBe(4);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(3, 0));
+    });
+    test('Find the expected hull when m = 3', () => {  
+      jarvisMarch(grahamHulls, hull, 3);
+      expect(hull.length).toBe(5);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(3, 1));
+    });
+    test('Find the expected hull when m = 4', () => {  
+      jarvisMarch(grahamHulls, hull, 4);
+      expect(hull.length).toBe(6);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(2, 2));
+    });
+    test('Find the expected hull when m = 5', () => {  
+      jarvisMarch(grahamHulls, hull, 5);
+      expect(hull.length).toBe(7);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(1, 2));
+    });
+    test('Find the expected hull when m = 6', () => {  
+      jarvisMarch(grahamHulls, hull, 6);
+      expect(hull.length).toBe(8);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(0, 1));
+    });
+    test('Find the expected hull when m = 7', () => {  
+      jarvisMarch(grahamHulls, hull, 7);
+      expect(hull.length).toBe(9);
+      const p2 = hull.pop();
+      expect(p2).toStrictEqual(new Point(0, 0));
+    });
+  });
+  describe('chan', () => {
+    test('should find the hull points', () => {
+      
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(1, 0)
+        .addPoint(1, 1)
+        .addPoint(0, 1)
+        .addPoint(2, 0)
+        .addPoint(3, 0)
+        .addPoint(3, 1)
+        .addPoint(2, 1)
+        .addPoint(1, 1)
+        .addPoint(2, 1)
+        .addPoint(2, 2)
+        .addPoint(1, 2);
+        const result = chan(grid);
+        console.log();
+    })
+  })
 });

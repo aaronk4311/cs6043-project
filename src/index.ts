@@ -1,15 +1,16 @@
-type pointInfo = {
-  distance: number;
-  point: Point;
-};
-
+/**
+ * 
+ * @param grid {@link Grid}
+ * @returns 
+ */
 export function chan(grid: Grid) {
   const { points } = grid;
   const p1 = getP1(grid.points);
   const p0 = new Point(p1.x - 1, p1.y);
   const n = points.length;
+  const stop = Math.log2(Math.log2(n));
 
-  for (let i = 1; i <= Math.log2(Math.log2(n)); i++) {
+  for (let i = 1; i <= stop + 1; i++) {
     const m = Math.pow(Math.pow(i, 2), 2);
     const hullPoints = [p0, p1];
     const k = Math.ceil(n / m);
@@ -28,10 +29,22 @@ export function chan(grid: Grid) {
   }
 }
 
+/**
+ * Check if two points are equal
+ * @param p1 point 1
+ * @param p2 point 2
+ * @returns {boolean} are points equal
+ */
 export function arePointsEqual(p1: Point, p2: Point): boolean {
   return p1.x === p2.x && p1.y === p2.y;
 }
 
+/**
+ * 
+ * @param grahamHulls 
+ * @param hullPoints 
+ * @param m 
+ */
 export function jarvisMarch(grahamHulls: Point[][], hullPoints: Point[], m: number) {
   for (let i = 0; i < m; i++) {
     let currentBest: { angle: number; point: Point } = null;
@@ -42,20 +55,30 @@ export function jarvisMarch(grahamHulls: Point[][], hullPoints: Point[], m: numb
         currentBest = bestOfGroup;
         continue;
       }
-      if (currentBest.angle < bestOfGroup.angle) {
+      if (bestOfGroup.angle < currentBest.angle) {
         currentBest = bestOfGroup;
       }
     }
     hullPoints.push(currentBest.point);
+    if (arePointsEqual(hullPoints[1], currentBest.point)) {
+      return;
+    }
   }
 }
 
-function isequalToP1OrP2(p1, p2, p3): boolean {
+/**
+ * is {@param p3} equal to {@param p1} or {@param p2}
+ * @param p1 {@link Point} point 1
+ * @param p2 {@link Point} point 2
+ * @param p3 {@link Point} point 3
+ * @returns {boolean} is p3 equal to p1 or p2
+ */
+export function isequalToP1OrP2(p1: Point, p2: Point, p3: Point): boolean {
   return arePointsEqual(p1, p3) || arePointsEqual(p2, p3);
 }
 
 /**
- * 
+ * Perform binary search to find the p
  * @param points 
  * @param p1 
  * @param p2 
@@ -67,7 +90,10 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
   while (true) {
     const idx = Math.ceil((right + left) / 2);
     const point = hull[idx];
-    if (isequalToP1OrP2(p1, p2, point) ) {
+    if (isequalToP1OrP2(p1, p2, point)) {
+      if (right <= left) {
+        return { angle: Infinity, point: new Point(Infinity, Infinity) };
+      }
       left = idx + 1;
       continue;
     }
@@ -97,9 +123,23 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
   }
 }
 
+/**
+ * 
+ * @param p1 
+ * @param p2 
+ * @param p3 
+ * @returns 
+ */
 function getAngleBetween3Points(p1: Point, p2: Point, p3: Point): number {
-  return Math.atan2(p3.y - p2.y, p3.x - p2.x) - 
-  Math.atan2(p2.y - p1.y, p2.x - p1.x);
+  const x1x2 = Math.pow(p1.x - p2.x, 2);
+  const y1y2 = Math.pow(p1.y - p2.y, 2);
+  const x2x3 = Math.pow(p2.x - p3.x, 2);
+  const y2y3 = Math.pow(p2.y - p3.y, 2);
+  const x1x3 = Math.pow(p1.x - p3.x, 2);
+  const y1y3 = Math.pow(p1.y - p3.y, 2);
+  const num = x1x2 + y1y2 + (x2x3 + y2y3) - (x1x3 + y1y3);
+  const denom = 2 * Math.sqrt(x1x2 + y1y2) * Math.sqrt(x2x3 + y2y3);
+  return num / denom;
 }
 
 /**
