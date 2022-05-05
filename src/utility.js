@@ -139,48 +139,49 @@ exports.arePointsEqual = arePointsEqual;
 
 
 // rendering functions
+var states = [];
+
 function generateRandomPoints(vertexCount) {
-    var vertices = []
+    var vertexSet = []
 
     for (let i = 0; i < vertexCount; i++) {
         var x = d3.randomUniform(10, width - 10)(), y = d3.randomUniform(10, height - 10)();
-        vertices.push(new Point(x, y));
+        vertexSet.push(new Point(x, y));
     }
 
-    return vertices;
+    return vertexSet;
 }
 exports.generateRandomPoints = generateRandomPoints;
 
-function drawVertex(p, color = null, width = null) {
+function drawVertex(p) {
     gVertices.append("circle")
-        .attr("id", "(" + p.x.toString() + ", " + p.y.toString() + ")")
-        .attr("r", 4)
+        .attr("id", "(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + p.color.toString() + ")")
+        .attr("r", p.radius)
         .attr("cx", xRange(p.x))
         .attr("cy", yRange(p.y))
         .style("fill", p.color)
-        .style("stroke", color ? color : "black")
-        .style("stroke-width", width ? width : 1);
+        .style("stroke", "black")
+        .style("stroke-width", 1);
 }
 
-function drawEdge(p0, p1, color = null, width = null) {
+function drawEdge(e) {
     // draw an edge connecting two points
     gEdges.append("line")
-        .attr("id", "(" + p0.x.toString() + ", " + p0.y.toString() + "), (" + p1.x.toString() + ", " + p1.y.toString() + ")")
-        .attr("r", 2)
-        .attr("x1", xRange(p0.x))
-        .attr("y1", yRange(p0.y))
-        .attr("x2", xRange(p1.x))
-        .attr("y2", yRange(p1.y))
-        .style("stroke", color ? color : p0.color)
-        .style("stroke-width", width? width : 2);
+        .attr("id", "(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + e.size.toString() + e.color.toString() + ")")
+        .attr("x1", xRange(e.p1.x))
+        .attr("y1", yRange(e.p1.y))
+        .attr("x2", xRange(e.p2.x))
+        .attr("y2", yRange(e.p2.y))
+        .style("stroke", e.color)
+        .style("stroke-width", e.size);
 }
 
 function removeVertex(p) {  // TODO: if multiple vertices are drawn at the same position, they share the same id and only one gets removed
-    gVertices.select("circle[id='(" + p.x.toString() + ", " + p.y.toString() + ")']").remove();
+    gVertices.select("circle[id='(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + p.color.toString() + ")']").remove();
 }
 
-function removeEdge(p0, p1) {   // TODO: same issue as removeVertex
-    gEdges.select("line[id='(" + p0.x.toString() + ", " + p0.y.toString() + "), (" + p1.x.toString() + ", " + p1.y.toString() + ")']").remove();
+function removeEdge(e) {   // TODO: same issue as removeVertex
+    gEdges.select("line[id='(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + e.size.toString() + e.color.toString() +  ")']").remove();
 }
 
 function removeAllEdges() {
