@@ -199,7 +199,7 @@ autorunBtn.onclick = async function(event) {
     document.getElementById("end-step").disabled = true;
     document.getElementById("prev-step").disabled = true;
     document.getElementById("start-step").disabled = true;
-
+    document.getElementById("vertex-count-input").disabled = true;
     document.getElementById("vertex-count-form-submit").disabled = true;
     document.getElementById("autorun").disabled = true;
 
@@ -212,7 +212,7 @@ autorunBtn.onclick = async function(event) {
     stepIdx--;
     document.getElementById("prev-step").disabled = false;
     document.getElementById("start-step").disabled = false;
-
+    document.getElementById("vertex-count-input").disabled = false;
     document.getElementById("vertex-count-form-submit").disabled = false;
     document.getElementById("autorun").disabled = false;
 }
