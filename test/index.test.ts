@@ -1,6 +1,7 @@
 import {
   arePointsEqual,
   chan,
+  chanWithHullCache,
   crossProduct,
   getAngle,
   getDistanceBetweenPoints,
@@ -415,7 +416,43 @@ describe('index', () => {
         .addPoint(2, 2)
         .addPoint(1, 2);
         const result = chan(grid);
-        console.log();
-    })
-  })
+        console.log(result);
+        expect(result.includes(new Point(0,0)));
+        expect(result.includes(new Point(1,0)));
+        expect(result.includes(new Point(2,0)));
+        expect(result.includes(new Point(3,0)));
+        expect(result.includes(new Point(3,1)));
+        expect(result.includes(new Point(2,2)));
+        expect(result.includes(new Point(1,2)));
+        expect(result.includes(new Point(0,1)));
+    });
+  });
+  describe('chanWithHullCache', () => {
+    test('should find the hull points', () => {
+      
+      const grid = new Grid()
+        .addPoint(0, 0)
+        .addPoint(1, 0)
+        .addPoint(1, 1)
+        .addPoint(0, 1)
+        .addPoint(2, 0)
+        .addPoint(3, 0)
+        .addPoint(3, 1)
+        .addPoint(2, 1)
+        .addPoint(1, 1)
+        .addPoint(2, 1)
+        .addPoint(2, 2)
+        .addPoint(1, 2);
+        const result = chanWithHullCache(grid);
+        console.log(result);
+        expect(result.includes(new Point(0,0)));
+        expect(result.includes(new Point(1,0)));
+        expect(result.includes(new Point(2,0)));
+        expect(result.includes(new Point(3,0)));
+        expect(result.includes(new Point(3,1)));
+        expect(result.includes(new Point(2,2)));
+        expect(result.includes(new Point(1,2)));
+        expect(result.includes(new Point(0,1)));
+    });
+  });
 });

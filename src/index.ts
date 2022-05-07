@@ -1,9 +1,45 @@
+export function chanWithHullCache(grid: Grid): Point[] {
+  let { points } = grid;
+  const p1 = getP1(points);
+  const p0 = new Point(p1.x - 1, p1.y);
+  let n = points.length;
+  const stop = Math.ceil(Math.log2(Math.log2(n)));
+  const hullPoints = [p0, p1];
+  let grahamHulls = [];
+
+  for (let i = 1; i <= stop; i++) {
+    if (grahamHulls.length) {
+      points = grahamHulls.reduce((newPoints: Point[], hull: Point[]) => {
+        newPoints.push(...hull);
+        return newPoints;
+      }, []);
+    }
+    n = points.length;
+    const m = Math.min(
+      Math.pow(2, Math.pow(i, 2)),
+      n,
+    );
+    const splitPointsArray = splitPoints(points, m);
+    grahamHulls = [];
+    for (let i = 0; i < splitPointsArray.length; i++) {
+      const grahamHull = grahamScan(splitPointsArray[i]);
+      grahamHulls.push(grahamHull);
+    }
+    jarvisMarch(grahamHulls, hullPoints, m);
+    if (arePointsEqual(hullPoints[1], hullPoints[hullPoints.length - 1])) {
+      // get rid of the fake point at the start for only the first iteration
+      hullPoints.shift();
+      return hullPoints;
+    }
+  }
+}
+
 /**
  * 
  * @param grid {@link Grid}
  * @returns 
  */
-export function chan(grid: Grid) {
+export function chan(grid: Grid): Point[] {
   const { points } = grid;
   const p1 = getP1(grid.points);
   const p0 = new Point(p1.x - 1, p1.y);
@@ -11,9 +47,8 @@ export function chan(grid: Grid) {
   const stop = Math.log2(Math.log2(n));
 
   for (let i = 1; i <= stop + 1; i++) {
-    const m = Math.pow(Math.pow(i, 2), 2);
+    const m = Math.pow(2, Math.pow(2, i));
     const hullPoints = [p0, p1];
-    const k = Math.ceil(n / m);
     const splitPointsArray = splitPoints(grid.points, m);
     const grahamHulls = [];
     for (let i = 0; i < splitPointsArray.length; i++) {
@@ -22,8 +57,8 @@ export function chan(grid: Grid) {
     }
     jarvisMarch(grahamHulls, hullPoints, m);
     // get rid of the fake point at the start.
-    hullPoints.shift();
-    if (arePointsEqual(hullPoints[0], hullPoints[hullPoints.length - 1])) {
+    if (arePointsEqual(hullPoints[1], hullPoints[hullPoints.length - 1])) {
+      hullPoints.shift();
       return hullPoints;
     }
   }
@@ -94,7 +129,7 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point) {
       if (right <= left) {
         return { angle: Infinity, point: new Point(Infinity, Infinity) };
       }
-      left = idx + 1;
+      left = idx;
       continue;
     }
     const angle = getAngleBetween3Points(p1, p2, point);
