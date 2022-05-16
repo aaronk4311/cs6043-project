@@ -23,6 +23,10 @@ rect {
     stroke: black;
 }
 
+#demo-container {
+    text-align: center;
+}
+
 /* vertex {
     fill: black;
     stroke: none;
