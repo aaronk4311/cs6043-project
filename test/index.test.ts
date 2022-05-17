@@ -49,7 +49,7 @@ describe('index', () => {
         .addPoint(2, 4)
         .addPoint(3, 3)
         .addPoint(1, 2);
-      const p1 = getP1(grid.points);
+      const p1 = getP1(grid.points, { steps: 0 });
       expect(p1.x).toBe(1);
       expect(p1.y).toBe(2);
     });
@@ -58,7 +58,7 @@ describe('index', () => {
         .addPoint(2, 4)
         .addPoint(1, 3)
         .addPoint(2, 3);
-      const p1 = getP1(grid.points);
+      const p1 = getP1(grid.points, { steps: 0 });
       expect(p1.x).toBe(1);
       expect(p1.y).toBe(3);
     });
@@ -70,7 +70,7 @@ describe('index', () => {
       .addPoint(2, 3)
       .addPoint(4, 5)
     test('split into groups of 1', () => {
-      const results = splitPoints(grid.points, 1);
+      const results = splitPoints(grid.points, 1, { steps: 0 });
       expect(results.length).toBe(3);
       for (let i = 0; i < results.length - 1; i++) {
         expect(results[i].length).toBe(1);
@@ -78,7 +78,7 @@ describe('index', () => {
       expect(results[results.length - 1].length).toBe(1);
     });
     test('Split into groups of 2', () => {
-      const results = splitPoints(grid.points, 2);
+      const results = splitPoints(grid.points, 2, { steps: 0 });
       expect(results.length).toBe(2);
       for (let i = 0; i < results.length - 1; i++) {
         expect(results[i].length).toBe(2);
@@ -86,7 +86,7 @@ describe('index', () => {
       expect(results[results.length - 1].length).toBe(1);
     });
     test('Split into groups of 3', () => {
-      const results = splitPoints(grid.points, 3);
+      const results = splitPoints(grid.points, 3, { steps: 0 });
       expect(results.length).toBe(1);
       expect(results[results.length - 1].length).toBe(3);
     });
@@ -159,7 +159,7 @@ describe('index', () => {
         .addPoint(0, 0)
         .addPoint(1, 0)
         .addPoint(-1, 0.01);
-      const results = sortInOrderOfAngleWithP1(grid.points);
+      const results = sortInOrderOfAngleWithP1(grid.points, { steps: 0 });
       expect(results.length).toBe(6);
       expect(results[0]).toStrictEqual(new Point(0, 0));
       expect(results[1]).toStrictEqual(new Point(1, 0));
@@ -214,7 +214,7 @@ describe('index', () => {
         .addPoint(2, 2)
         .addPoint(0, 0)
         .addPoint(2, 0);
-      const results = grahamScan(grid.points);
+      const results = grahamScan(grid.points, { steps: 0 });
       expect(results.length).toBe(4);
       expect(results[0]).toStrictEqual(new Point(0, 0));
       expect(results[1]).toStrictEqual(new Point(2, 0));
@@ -231,7 +231,7 @@ describe('index', () => {
         .addPoint(0, 2);
       const p1 = new Point(0, 0);
       const p0 = new Point(p1.x - 1, p1.y);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(2, 0));
     });
     test('test odd', () => {
@@ -243,7 +243,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p1 = new Point(0, 0);
       const p0 = new Point(p1.x - 1, p1.y);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(4, 1));
     });
     test('3', () => {
@@ -255,7 +255,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p0 = new Point(0, 0);
       const p1 = new Point(4, 1);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(4, 2));
     });
 
@@ -268,7 +268,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p0 = new Point(4, 1);
       const p1 = new Point(4, 2);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(3, 3));
     });
     test('5', () => {
@@ -280,7 +280,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p0 = new Point(4, 2);
       const p1 = new Point(3, 3);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(0, 4));
     });
     test('6', () => {
@@ -292,7 +292,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p0 = new Point(3, 3);
       const p1 = new Point(0, 4);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(0, 0));
     });
     test('7', () => {
@@ -304,7 +304,7 @@ describe('index', () => {
         .addPoint(0, 4);
       const p0 = new Point(0, 4);
       const p1 = new Point(0, 0);
-      const result = jarvisBinary(grid.points, p0, p1);
+      const result = jarvisBinary(grid.points, p0, p1, { steps: 0 });
       expect(result.point).toStrictEqual(new Point(4, 1));
     });
   });
@@ -356,44 +356,44 @@ describe('index', () => {
         grahamHull3.points
       ];
     });
-    test('Find the expected hull when m = 1', () => {  
-      jarvisMarch(grahamHulls, hull, 1);
+    test('Find the expected hull when m = 1', () => {
+      jarvisMarch(grahamHulls, hull, 1, { steps: 0 });
       expect(hull.length).toBe(3);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(1, 0));
     });
-    test('Find the expected hull when m = 2', () => {  
-      jarvisMarch(grahamHulls, hull, 2);
+    test('Find the expected hull when m = 2', () => {
+      jarvisMarch(grahamHulls, hull, 2, { steps: 0 });
       expect(hull.length).toBe(4);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(3, 0));
     });
-    test('Find the expected hull when m = 3', () => {  
-      jarvisMarch(grahamHulls, hull, 3);
+    test('Find the expected hull when m = 3', () => {
+      jarvisMarch(grahamHulls, hull, 3, { steps: 0 });
       expect(hull.length).toBe(5);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(3, 1));
     });
-    test('Find the expected hull when m = 4', () => {  
-      jarvisMarch(grahamHulls, hull, 4);
+    test('Find the expected hull when m = 4', () => {
+      jarvisMarch(grahamHulls, hull, 4, { steps: 0 });
       expect(hull.length).toBe(6);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(2, 2));
     });
-    test('Find the expected hull when m = 5', () => {  
-      jarvisMarch(grahamHulls, hull, 5);
+    test('Find the expected hull when m = 5', () => {
+      jarvisMarch(grahamHulls, hull, 5, { steps: 0 });
       expect(hull.length).toBe(7);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(1, 2));
     });
-    test('Find the expected hull when m = 6', () => {  
-      jarvisMarch(grahamHulls, hull, 6);
+    test('Find the expected hull when m = 6', () => {
+      jarvisMarch(grahamHulls, hull, 6, { steps: 0 });
       expect(hull.length).toBe(8);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(0, 1));
     });
-    test('Find the expected hull when m = 7', () => {  
-      jarvisMarch(grahamHulls, hull, 7);
+    test('Find the expected hull when m = 7', () => {
+      jarvisMarch(grahamHulls, hull, 7, { steps: 0 });
       expect(hull.length).toBe(9);
       const p2 = hull.pop();
       expect(p2).toStrictEqual(new Point(0, 0));
@@ -401,37 +401,40 @@ describe('index', () => {
   });
   describe('chan', () => {
     test('should find the hull points', () => {
-      
+      const stepsObj = { steps: 0 };
       const grid = new Grid()
-        .addPoint(0, 0)
-        .addPoint(1, 0)
-        .addPoint(1, 1)
-        .addPoint(0, 1)
-        .addPoint(2, 0)
-        .addPoint(3, 0)
-        .addPoint(3, 1)
-        .addPoint(2, 1)
-        .addPoint(1, 1)
-        .addPoint(2, 1)
-        .addPoint(2, 2)
-        .addPoint(1, 2);
-        const result = chan(grid);
-        console.log(result);
-        expect(result.includes(new Point(0,0)));
-        expect(result.includes(new Point(1,0)));
-        expect(result.includes(new Point(2,0)));
-        expect(result.includes(new Point(3,0)));
-        expect(result.includes(new Point(3,1)));
-        expect(result.includes(new Point(2,2)));
-        expect(result.includes(new Point(1,2)));
-        expect(result.includes(new Point(0,1)));
+      .addPoint(0, 0)
+      .addPoint(0.5, 0.5)
+      .addPoint(1, 0)
+      .addPoint(1, 1)
+      .addPoint(0, 1)
+      .addPoint(2, 0)
+      .addPoint(3, 0)
+      .addPoint(3, 1)
+      .addPoint(2, 1)
+      .addPoint(1, 1)
+      .addPoint(2, 1)
+      .addPoint(2, 2)
+      .addPoint(1, 2);
+      const result = chan(grid, stepsObj);
+      console.log('Steps: ', stepsObj.steps);
+      console.log(result);
+      expect(result.includes(new Point(0, 0)));
+      expect(result.includes(new Point(1, 0)));
+      expect(result.includes(new Point(2, 0)));
+      expect(result.includes(new Point(3, 0)));
+      expect(result.includes(new Point(3, 1)));
+      expect(result.includes(new Point(2, 2)));
+      expect(result.includes(new Point(1, 2)));
+      expect(result.includes(new Point(0, 1)));
     });
   });
   describe('chanWithHullCache', () => {
     test('should find the hull points', () => {
-      
+      const stepsObj = { steps: 0 };
       const grid = new Grid()
         .addPoint(0, 0)
+        .addPoint(0.5, 0.5)
         .addPoint(1, 0)
         .addPoint(1, 1)
         .addPoint(0, 1)
@@ -443,16 +446,17 @@ describe('index', () => {
         .addPoint(2, 1)
         .addPoint(2, 2)
         .addPoint(1, 2);
-        const result = chanWithHullCache(grid);
-        console.log(result);
-        expect(result.includes(new Point(0,0)));
-        expect(result.includes(new Point(1,0)));
-        expect(result.includes(new Point(2,0)));
-        expect(result.includes(new Point(3,0)));
-        expect(result.includes(new Point(3,1)));
-        expect(result.includes(new Point(2,2)));
-        expect(result.includes(new Point(1,2)));
-        expect(result.includes(new Point(0,1)));
+      const result = chanWithHullCache(grid, stepsObj);
+      console.log(result);
+      console.log('Steps: ', stepsObj.steps);
+      expect(result.includes(new Point(0, 0)));
+      expect(result.includes(new Point(1, 0)));
+      expect(result.includes(new Point(2, 0)));
+      expect(result.includes(new Point(3, 0)));
+      expect(result.includes(new Point(3, 1)));
+      expect(result.includes(new Point(2, 2)));
+      expect(result.includes(new Point(1, 2)));
+      expect(result.includes(new Point(0, 1)));
     });
   });
 });
