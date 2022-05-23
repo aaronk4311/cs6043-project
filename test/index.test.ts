@@ -403,19 +403,19 @@ describe('index', () => {
     test('should find the hull points', () => {
       const stepsObj = { steps: 0 };
       const grid = new Grid()
-      .addPoint(0, 0)
-      .addPoint(0.5, 0.5)
-      .addPoint(1, 0)
-      .addPoint(1, 1)
-      .addPoint(0, 1)
-      .addPoint(2, 0)
-      .addPoint(3, 0)
-      .addPoint(3, 1)
-      .addPoint(2, 1)
-      .addPoint(1, 1)
-      .addPoint(2, 1)
-      .addPoint(2, 2)
-      .addPoint(1, 2);
+        .addPoint(0, 0)
+        .addPoint(0.5, 0.5)
+        .addPoint(1, 0)
+        .addPoint(1, 1)
+        .addPoint(0, 1)
+        .addPoint(2, 0)
+        .addPoint(3, 0)
+        .addPoint(3, 1)
+        .addPoint(2, 1)
+        .addPoint(1, 1)
+        .addPoint(2, 1)
+        .addPoint(2, 2)
+        .addPoint(1, 2);
       const result = chan(grid, stepsObj);
       console.log('Steps: ', stepsObj.steps);
       console.log(result);
@@ -457,6 +457,15 @@ describe('index', () => {
       expect(result.includes(new Point(2, 2)));
       expect(result.includes(new Point(1, 2)));
       expect(result.includes(new Point(0, 1)));
+    });
+    test('another one', () => {
+      const grid = new Grid()
+        .addPoint(178, 167)
+        .addPoint(549, 611)
+        .addPoint(759, 259)
+        .addPoint(300, 100);
+      const result = chanWithHullCache(grid, { steps: 0 });
+      console.log(result);
     });
   });
 });

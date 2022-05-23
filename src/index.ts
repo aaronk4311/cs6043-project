@@ -18,7 +18,7 @@ export function chanWithHullCache(grid: Grid, stepsObj: tSteps): Point[] {
   const hullPoints = [p0, p1];
   let grahamHulls = [];
 
-  for (let i = 1; i <= stop; i++) {
+  for (let i = 1; i <= stop + 1; i++) {
     stepsObj.steps++;
     if (grahamHulls.length) {
       points = grahamHulls.reduce((newPoints: Point[], hull: Point[]) => {
@@ -148,7 +148,11 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point, stepsObj: tSte
       if (right <= left) {
         return { angle: Infinity, point: new Point(Infinity, Infinity) };
       }
-      left = idx;
+      if (goRight(hull, p1, p2, idx)) {
+        left = idx;
+      } else {
+        right = idx - 1;
+      }
       continue;
     }
     const angle = getAngleBetween3Points(p1, p2, point);
@@ -175,6 +179,15 @@ export function jarvisBinary(hull: Point[], p1: Point, p2: Point, stepsObj: tSte
       return { point: hull[idx], angle };
     }
   }
+}
+
+function goRight(hull: Point[], p1: Point, p2: Point, index: number): boolean {
+  while (++index < hull.length) {
+    if (!isequalToP1OrP2(p1, p2, hull[index])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
