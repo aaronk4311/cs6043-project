@@ -1,4 +1,9 @@
 type tSteps = { steps: number; }
+type tOptions = {
+  modifiedM: boolean;
+  cacheHullPoints: boolean;
+  removeNonHullGrahamPoints: boolean;
+}
 
 /**
  * Compute the convex hull of a set of points using a modified version of chan's algorithm
@@ -9,18 +14,18 @@ type tSteps = { steps: number; }
  * @param grid 
  * @returns 
  */
-export function chanWithHullCache(grid: Grid, stepsObj: tSteps): Point[] {
+export function chanWithHullCache(grid: Grid, stepsObj: tSteps, options: tOptions): Point[] {
   let { points } = grid;
   const p1 = getP1(points, stepsObj);
   const p0 = new Point(p1.x - 1, p1.y);
   let n = points.length;
   const stop = Math.ceil(Math.log2(Math.log2(n)));
-  const hullPoints = [p0, p1];
+  let hullPoints = [p0, p1];
   let grahamHulls = [];
 
   for (let i = 1; i <= stop + 1; i++) {
     stepsObj.steps++;
-    if (grahamHulls.length) {
+    if (options.removeNonHullGrahamPoints && grahamHulls.length) {
       points = grahamHulls.reduce((newPoints: Point[], hull: Point[]) => {
         stepsObj.steps++;
         newPoints.push(...hull);
@@ -28,10 +33,8 @@ export function chanWithHullCache(grid: Grid, stepsObj: tSteps): Point[] {
       }, []);
     }
     n = points.length;
-    const m = Math.min(
-      Math.pow(2, Math.pow(i, 2)),
-      n,
-    );
+    const m = options.modifiedM ? Math.min(Math.pow(2, Math.pow(i, 2)), n) :
+      Math.pow(2, Math.pow(2, i));
     const splitPointsArray = splitPoints(points, m, stepsObj);
     grahamHulls = [];
     for (let i = 0; i < splitPointsArray.length; i++) {
@@ -44,6 +47,9 @@ export function chanWithHullCache(grid: Grid, stepsObj: tSteps): Point[] {
       // get rid of the fake point at the start for only the first iteration
       hullPoints.shift();
       return hullPoints;
+    }
+    if (!options.cacheHullPoints) {
+      hullPoints = [p0, p1];
     }
   }
 }
