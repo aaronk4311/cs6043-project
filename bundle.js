@@ -1,7 +1,5 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-function lines() {
-    return "<p>" + Array.prototype.slice.call(arguments).join("</p><p>") + "</p>";
-}
+function lines() {return "<p>" + Array.prototype.slice.call(arguments).join("</p><p>") + "</p>";}
 
 exports.intro = lines("In this demo, we visualize Chan's Algorithm for a given set of input points. To start, enter an integer and click the corresponding button to generate a set of random points. All points will start off uncolored. As you step through the algorithm, new texts will appear on this side of the page explaining the corresponding step.");
 
@@ -15,13 +13,15 @@ exports.fastForwardGrahamScan = lines("For each subset of <em>P</em>, we constru
 
 exports.miniHullFound = lines("Minihull successfully constructed for this subset of <em>P</em>.");
 
-exports.grahamScanDone = lines("Graham Scan finished, all minihulls have been found.");
+exports.grahamScanDone = lines("Graham Scan finished, all minihulls have been found. We move onto Jarvis' March.", "In the first iteration of Jarvis' March, we start off with <em>p<sub>0</sub> = (-∞, 0)</em> and <em>p<sub>1</sub> = y<sub>min</sub></em> (note <em>p<sub>1</sub></em> is the first hull point technically). We now begin Jarvis' March. First, we visualize the binary search step to find tangents on all minihulls and their candidate points. Then we pick the one that forms the max angle with <em>p<sub>0</sub></em> and <em>p<sub>1</sub></em>.");
 
-exports.jarvisMarch1 = lines("We now run the modified Jarvis March step. First, pick an extreme point from the original set of points, which will be the first convex hull point. In our implementation, we chose the lowest <em>y</em> point, call it <em>p<sub>1</sub></em>. Next, we find the candidate point on each minihull such that the angle formed between it, <em>p<sub>0</sub> = (-∞, 0)</em>, and <em>p<sub>1</sub></em> is maxmimum for that minihull");
-
+exports.jarvisMarch1 = lines("We've found our first hull edge. Now, repeat until we've found the convex hull or we've iterated up to <em>m</em>.");
 exports.jarvisMarch2 = lines("Repeating modified Jarvis March step on new <em>p<sub>0</sub></em> and <em>p<sub>1</sub></em>.");
 
-exports.foundMiniHullMax1 = lines("With all candidate points found for each minihull, we do one more comparison and pick the one that maximizes the angle formed between it, <em>p<sub>0</sub></em>, and <em>p<sub>1</sub></em>. This point chosen is the second hull point found. In the actual implementation we did, the point is picked simply by updating a variable every time we found a candidate point whose angle is greater than the current maximum angle we previously found.");
+exports.jarvisBinary = lines("Running binary search on current minihull to find tangent.");
+exports.jarvisBinaryDone = lines("We've found the corresponding minihull's tangent and its candidate point.");
+
+exports.foundMiniHullMax1 = lines("With all candidate points found for each minihull, we pick the one that maximizes the angle formed between it, <em>p<sub>0</sub></em>, and <em>p<sub>1</sub></em>. This point chosen is the second hull point (first hull edge) found.");
 
 exports.foundMiniHullMax2 = lines("Another hull point is found. We now update <em>p<sub>0</sub></em> to be <em>p<sub>1</sub></em>, and <em>p<sub>1</sub></em> to be the new convex hull point we just found. Now, repeat the same process with the new points mentioned to find the next convex hull point. We repeat until we've either reached <em>m</em> and did not finish the convex hull yet, or the convex hull is fully constructed, i.e., the last hull point connects with the very first hull point.");
 
@@ -35,8 +35,8 @@ var explanations = require("./explanations");
 "use strict";
 
 exports.__esModule = true;
-exports.Point = exports.Edge = exports.grahamScan = exports.jarvisMarch = exports.chan = exports.runChansAlgorithm = void 0;
-exports.generateRandomPoints = exports.getP1 = exports.splitPoints = exports.getAngle = exports.getDistanceBetweenPoints = exports.sortInOrderOfAngleWithP1 = exports.crossProduct = exports.getNextToTopOfStack = exports.getTopOfStack = exports.getAngleBetween3Points = exports.arePointsEqual = void 0;
+exports.Point = exports.Edge = exports.grahamScan = exports.jarvisMarch = exports.jarvisBinary = exports.jarvisWalk = exports.chan = exports.runChansAlgorithm = void 0;
+exports.generateRandomPoints = exports.getP1 = exports.splitPoints = exports.getAngle = exports.getDistanceBetweenPoints = exports.sortInOrderOfAngleWithP1 = exports.crossProduct = exports.getNextToTopOfStack = exports.getTopOfStack = exports.getAngleBetween3Points = exports.arePointsEqual = exports.isequalToP1OrP2 = exports.chanWithHullCache = void 0;
 
 /*
 UTILITY FUNCTIONS BEGIN
@@ -122,6 +122,7 @@ exports.getP1 = getP1;
  * by the angle each {@link Point} makes with {@link p1}
  * @param points {@link Point[]}s
  * @returns sorted {@link Point[]}s
+ * O(mlog(m)) runtime
  */
 function sortInOrderOfAngleWithP1(points) { // TODO: note i had to swap angle1 and angle2, and also distance1 and distance2 in calculation to get expected output. not sure why.
     var p1 = getP1(points);
@@ -150,15 +151,24 @@ function getAngleBetween3Points(point1, point2, point3) {
 }
 exports.getAngleBetween3Points = getAngleBetween3Points;
 
+/**
+ * Split a set of points in groups of size m.
+ * O(n) runtime
+ * @param points {@link Point[]}
+ * @param m Group size
+ * @returns Array of arrays with size m
+ */
 function splitPoints(points, m) {
     var result = [];
     for (var i = 0; i < points.length;) {
         var temp = [];
         var start = i;
+        var groupColor = randColor();
         for (; i < m + start; i++) {
             if (i === points.length) {
                 break;
             }
+            points[i].color = groupColor;
             temp.push(points[i]);
         }
         result.push(temp);
@@ -167,12 +177,37 @@ function splitPoints(points, m) {
 }
 exports.splitPoints = splitPoints;
 
-function arePointsEqual(point1, point2) {
-    return point1.x === point2.x && point1.y === point2.y;
+/**
+ * Check if two points are equal
+ * @param p1 point 1
+ * @param p2 point 2
+ * @returns {boolean} are points equal
+ */
+function arePointsEqual(p1, p2) {
+    return p1.x === p2.x && p1.y === p2.y;
 }
 exports.arePointsEqual = arePointsEqual;
 
-// TODO: check if we currently handle collinear points in implementation
+/**
+ * is {@param p3} equal to {@param p1} or {@param p2}
+ * @param p1 {@link Point} point 1
+ * @param p2 {@link Point} point 2
+ * @param p3 {@link Point} point 3
+ * @returns {boolean} is p3 equal to p1 or p2
+ */
+ function isequalToP1OrP2(p1, p2, p3) {
+    return arePointsEqual(p1, p3) || arePointsEqual(p2, p3);
+}
+exports.isequalToP1OrP2 = isequalToP1OrP2;
+
+function goRight(hull, p1, p2, index) {
+    while (++index < hull.length) {
+        if (!isequalToP1OrP2(p1, p2, hull[index])) {
+            return true;
+        }
+    }
+    return false;
+}
 // computation functions end
 
 
@@ -375,56 +410,42 @@ checkbox1.append("input").attr("class", "form-check-input").attr("type", "checkb
 checkbox1.append("label")
     .attr("class", "form-check-label")
     .attr("for", "increase-m-slower")
-    .attr("data-bs-html", true)
+    .text("Use m = 2^t");
+checkbox1.append("i")
+    .attr("id", "info-icon")
+    .attr("class", "fa-solid fa-circle-info")
     .attr("data-bs-toggle", "tooltip")
     .attr("data-bs-original-title", "Standard Chan's Algorithm uses <em>m = 2<sup>2<sup>t</sup></sup></em>. Setting this option allows you to see Chan's Algorithm run through more passes, although this is less efficient of course (<em>O(nlog<sup>2</sup>h)</em> work).")
     .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true)
-    .text("Use m = 2^t");
+    .attr("data-bs-html", true);
 
 var checkbox2 = navCheckboxes1.append("div").attr("class", "form-check");
 checkbox2.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "fast-forward-graham-scan");
 checkbox2.append("label")
     .attr("class", "form-check-label")
     .attr("for", "fast-forward-graham-scan")
+    .text("Fast Forward Building Minihulls");
+checkbox2.append("i")
+    .attr("id", "info-icon")
+    .attr("class", "fa-solid fa-circle-info")
     .attr("data-bs-toggle", "tooltip")
     .attr("data-bs-original-title", "Skips straight to the end of constructing each minihull in the visualization.")
     .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true)
-    .text("Fast Forward Building Minihulls");
-
+    .attr("data-bs-html", true);
+    
 var checkbox3 = navCheckboxes1.append("div").attr("class", "form-check");
-checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "jarvis-march-cache-points");
+checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "chan-improved");
 checkbox3.append("label")
     .attr("class", "form-check-label")
-    .attr("for", "jarvis-march-cache-points")
+    .attr("for", "chan-improved")
+    .text("Run with Improvements");
+checkbox3.append("i")
+    .attr("id", "info-icon")
+    .attr("class", "fa-solid fa-circle-info")
     .attr("data-bs-toggle", "tooltip")
-    .attr("data-bs-original-title", "Instead of using binary search to find max tangents on each minihull, we just binary search once at the start of the modified Jarvis' March.")
+    .attr("data-bs-original-title", "Improvements include:<br><ul><li>Instead of using binary search to find max tangents on each minihull, we just binary search once at the start of the Jarvis' March.</li><li>Discard points that did not make it into any of the minihulls during Graham Scan.</li><li>Cache hull points so they don't have to be recomputed in future iterations of Chan's.</li><li>TODO: Rather than using <em>m = H</em>, use <em>H = m / logm</em></li><li>Since we're discarding points, we can grow <em>m</em> slower, <em>m = 2<sup>t<sup>2</sup></sup></em>.</li></ul>")
     .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true)
-    .text("Cache Points in Jarvis March Step");
-
-var checkbox4 = navCheckboxes1.append("div").attr("class", "form-check");
-checkbox4.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "discard-points");
-checkbox4.append("label")
-    .attr("class", "form-check-label")
-    .attr("for", "discard-points")
-    .attr("data-bs-toggle", "tooltip")
-    .attr("data-bs-original-title", "During Graham Scan, points that don't make it into minihulls will be discarded in the next iteration of Chan's algorithm if the current iteration does not find conv<em>(P)</em>.")
-    .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true)
-    .text("Discard Unused Points in Graham Scan");
-
-var checkbox5 = navCheckboxes2.append("div").attr("class", "form-check");
-checkbox5.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "discard-points");
-checkbox5.append("label")
-    .attr("class", "form-check-label")
-    .attr("for", "discard-points")
-    .attr("data-bs-toggle", "tooltip")
-    .attr("data-bs-original-title", "")
-    .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true)
-    .text("Use m = min(2^(t^2), n)");
+    .attr("data-bs-html", true);
 
 var demoOutput = column2.append("svg")
     .attr("class", "demo-output")
@@ -566,12 +587,14 @@ speedSliderSubmit.oninput = function(event) {
 }
 
 var increaseMSlower = false,
-    fastForwardGrahamScan = false;
+    fastForwardGrahamScan = false,
+    chanImproved = false;
 
 var increaseMSlowerBtn = document.getElementById("increase-m-slower");
 increaseMSlowerBtn.oninput = function(event) {
     event.preventDefault();
     increaseMSlower = !increaseMSlower;
+    chanImprovedBtn.disabled = !chanImprovedBtn.disabled;
 }
 
 var fastForwardGrahamScanBtn = document.getElementById("fast-forward-graham-scan");
@@ -579,6 +602,14 @@ fastForwardGrahamScanBtn.oninput = function(event) {
     event.preventDefault();
     fastForwardGrahamScan = !fastForwardGrahamScan;
 }
+
+var chanImprovedBtn = document.getElementById("chan-improved");
+chanImprovedBtn.oninput = function(event) {
+    event.preventDefault();
+    chanImproved = !chanImproved;
+    increaseMSlowerBtn.disabled = !increaseMSlowerBtn.disabled;
+}
+
 // end step through algorithm
 
 /*
@@ -636,8 +667,9 @@ function grahamScan(points) {
     for (let i = 1; i < sortedPoints.length; i++) {
         const p3 = sortedPoints[i];
         while (hullVertices.length >= 2 && crossProduct(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices), p3) >= 0) {
-            // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice(0, -1)});
-            if (!fastForwardGrahamScan) states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice(0, -1)));
+            if (!fastForwardGrahamScan) {
+                states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice(0, -1)));
+            }
             hullVertices.pop();
             hullEdges.pop();
         }
@@ -645,7 +677,9 @@ function grahamScan(points) {
         hullVertices.push(p3);
         hullEdges.push(new Edge(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices)));
         // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices))])});
-        if (!fastForwardGrahamScan) states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([getTopOfStack(hullEdges)]), explanations.grahamScan));
+        if (!fastForwardGrahamScan) {
+            states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([getTopOfStack(hullEdges)]), explanations.grahamScan));
+        }
     }
     
     // for "hulls" of size 2, do not connect last vertex with first, otherwise we get a duplicate edge visually
@@ -655,117 +689,172 @@ function grahamScan(points) {
         if (!fastForwardGrahamScan) states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([getTopOfStack(hullEdges)]), explanations.miniHullFound));
     }
 
-    if (fastForwardGrahamScan) states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat(hullEdges), explanations.fastForwardGrahamScan));
+    if (fastForwardGrahamScan) {
+        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat(hullEdges), explanations.fastForwardGrahamScan));
+    }
 
     return hullVertices;
 }
 exports.grahamScan = grahamScan;
 
-function jarvisMarch(points, miniHulls, m) {
-    var binarySearchHull = function(hull) { // yandere dev would be proud
-        const hullPointsCount = hull.length;
+function jarvisWalk(p0, p1, hullStates, hull) {
+    var candidateIdx = hullStates.get(hull);
+    var candidatePoint = hull[candidateIdx];
+    var candidateAngle = (candidatePoint !== p1) ? getAngleBetween3Points(p0, p1, candidatePoint) : 0;
 
-        let left = 0, right = hull.length - 1;
-        while (true) {
-            const mid1 = Math.ceil((left + right) / 2) % hullPointsCount, 
-                mid2 = (mid1 + Math.ceil(hullPointsCount / 2)) % hullPointsCount;
+    var nextIdx = (candidateIdx + 1) % hull.length;
+    var nextPoint = hull[nextIdx];
+    var nextAngle = getAngleBetween3Points(p0, p1, nextPoint);
+    while (hull.length > 1 && nextAngle >= candidateAngle) {
+        candidateIdx = nextIdx;
+        candidatePoint = nextPoint;
+        candidateAngle = nextAngle;
 
-            const v1 = hull[mid1], 
-                v2 = hull[mid2];
+        nextIdx = (candidateIdx + 1) % hull.length;
+        nextPoint = hull[nextIdx];
+        nextAngle = getAngleBetween3Points(p0, p1, nextPoint);
+    }
 
-            const v1Prev = hull[(((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount], 
-                v1Next = hull[(mid1 + 1) % hullPointsCount],
-                v2Prev = hull[(((mid2 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount], 
-                v2Next = hull[(mid2 + 1) % hullPointsCount];
+    hullStates.set(hull, candidateIdx);
+    return {point: candidatePoint, angle: candidateAngle, index: candidateIdx};
+}
+exports.jarvisWalk = jarvisWalk;
 
-            const v1PrevTurn = crossProduct(p1, v1, v1Prev), 
-                v1NextTurn = crossProduct(p1, v1, v1Next),
-                v2PrevTurn = crossProduct(p1, v2, v2Prev), 
-                v2NextTurn = crossProduct(p1, v2, v2Next);
+function jarvisBinary(p0, p1, hullStates, hull) { // yandere dev would be proud
+    const hullPointsCount = hull.length;
 
-            // TODO: visualization for binary search if there's time
-            // const temp = states[states.length - 1];
-            // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(p1, v1, null, "grey")])});
-            // states.push(temp);
+    var candidate = null;
+    var left = 0, right = hull.length - 1;
+    const temp = states[states.length - 1];
+    while (true) {
+        const mid1 = Math.ceil((left + right) / 2) % hullPointsCount, 
+            mid2 = (mid1 + Math.ceil(hullPointsCount / 2)) % hullPointsCount;
 
-            // note below, that for some reason, the parity is flipped when taking the cross product, e.g., turning left yields a cross product < 0, rather than > 0.
-            // so if checking for left turns, we check if it's a right turn instead. probably has to do with lower points having higher y values than points above?
+        const v1 = hull[mid1], 
+            v2 = hull[mid2];
 
-            // found hull point
-            if (v1PrevTurn <= 0 && v1NextTurn < 0) {
-                return {point: v1, angle: p1 !== v1 ? getAngleBetween3Points(p0, p1, v1) : -Infinity};
+        const mid1Prev = (((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount,
+            mid1Next = (mid1 + 1) % hullPointsCount,
+            mid2Prev = (((mid2 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount,
+            mid2Next = (mid2 + 1) % hullPointsCount;
+
+        const v1Prev = hull[mid1Prev], 
+            v1Next = hull[mid1Next],
+            v2Prev = hull[mid2Prev], 
+            v2Next = hull[mid2Next];
+
+        const v1PrevTurn = crossProduct(p1, v1, v1Prev), 
+            v1NextTurn = crossProduct(p1, v1, v1Next),
+            v2PrevTurn = crossProduct(p1, v2, v2Prev), 
+            v2NextTurn = crossProduct(p1, v2, v2Next);
+
+        // note, that for some reason, the parity is flipped when taking the cross product, e.g., turning left yields a cross product < 0, rather than > 0.
+        // so if checking for left turns, we check if it's a right turn instead. probably has to do with lower points having higher y values than points above.
+
+        // found tangent point
+        if (v1PrevTurn <= 0 && v1NextTurn < 0) {
+            candidate = {point: v1, angle: p1 !== v1 ? getAngleBetween3Points(p0, p1, v1) : -Infinity, index: mid1};
+        }
+        else if (v2PrevTurn <= 0 && v2NextTurn < 0) {
+            candidate = {point: v2, angle: p1 !== v2 ? getAngleBetween3Points(p0, p1, v2) : -Infinity, index: mid2};
+        }
+        else if (v1PrevTurn === 0 && v1NextTurn === 0) {         // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
+            if (hullPointsCount === 2) {
+                const retIdx = (p1 === v1Next ? mid1 : mid1Next);
+                const retPoint = (p1 === v1Next ? v1 : v1Next);
+                candidate = {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint), index: retIdx};
             }
-            else if (v2PrevTurn <= 0 && v2NextTurn < 0) {
-                return {point: v2, angle: p1 !== v2 ? getAngleBetween3Points(p0, p1, v2) : -Infinity};
+            else {
+                candidate = {point: v1Next, angle: p1 !== v1Next ? getAngleBetween3Points(p0, p1, v1Next) : -Infinity, index: mid1Next};
             }
-
-            if (v1PrevTurn === 0 && v1NextTurn === 0) {         // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
-                if (hullPointsCount === 2) {
-                    const retPoint = (p1 === v1Next ? v1 : v1Next);
-                    return {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint)};
-                }
-
-                return {point: v1Next, angle: p1 !== v1Next ? getAngleBetween3Points(p0, p1, v1Next) : -Infinity};
+        }
+        else if (v2PrevTurn === 0 && v2NextTurn === 0) {    // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
+            if (hullPointsCount === 2) {
+                const retIdx = (p1 === v2Next ? mid2 : mid2Next);
+                const retPoint = (p1 === v2Next ? v2 : v2Next);
+                candidate = {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint), index: retIdx};
             }
-            else if (v2PrevTurn === 0 && v2NextTurn === 0) {    // we're on the midpoint (tangent is exactly one to the right) or point is already on top of the tangent.
-                if (hullPointsCount === 2) {
-                    const retPoint = (p1 === v2Next ? v2 : v2Next);
-                    return {point: retPoint, angle: getAngleBetween3Points(p0, p1, retPoint)};
-                }
-
-                return {point: v2Next, angle: p1 !== v2Next ? getAngleBetween3Points(p0, p1, v2Next) : -Infinity};
+            else {
+                candidate = {point: v2Next, angle: p1 !== v2Next ? getAngleBetween3Points(p0, p1, v2Next) : -Infinity, index: mid2Next};
             }
+        }
 
-            // midpoint1 hidden, midpoint2 illuminated / upper tangent
-            if ((v1PrevTurn > 0 && v1NextTurn < 0) && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn >= 0))) {
-                right = (((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount;
+        states.push(new State(temp.vertices, temp.edges.slice().concat([new Edge(p1, candidate ? candidate.point : v1, 5, "red")]), explanations.jarvisBinary));
+
+        if (candidate) {
+            break;
+        }
+
+        // midpoint1 hidden, midpoint2 illuminated / upper tangent
+        if ((v1PrevTurn > 0 && v1NextTurn < 0) && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn >= 0))) {
+            right = mid1Prev;
+        }
+
+        // midpoint1 illuminated / upper tangent, midpoint2 hidden
+        else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn >= 0)) && (v2PrevTurn > 0 && v2NextTurn < 0)) {
+            left = mid1Next;
+        }
+
+        // mid1point hidden, midpoint2 hidden
+        else if ((v1PrevTurn > 0 && v1NextTurn < 0) && (v2PrevTurn > 0 && v2NextTurn < 0)) {
+            if (crossProduct(v2, v1, p1) > 0) { // TODO: handle collinear points in demo if there's time
+                right = mid1Prev;
             }
-
-            // midpoint1 illuminated / upper tangent, midpoint2 hidden
-            else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn >= 0)) && (v2PrevTurn > 0 && v2NextTurn < 0)) {
-                left = (mid1 + 1) % hullPointsCount;
+            else {
+                left = mid1Next;
             }
+        }
 
-            // mid1point hidden, midpoint2 hidden
-            else if ((v1PrevTurn > 0 && v1NextTurn < 0) && (v2PrevTurn > 0 && v2NextTurn < 0)) {
-                if (crossProduct(v2, v1, p1) > 0) { // TODO: handle collinear points in demo if there's time
-                    right = (((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount;
-                }
-                else {
-                    left = (mid1 + 1) % hullPointsCount;
-                }
+        // midpoint1 illuminated / upper tangent, midpoint2 illuminated / upper tangent
+        else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn > 0)) && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn > 0))) {
+            if (crossProduct(v2, v1, p1) > 0) {
+                left = mid1Next;
             }
-
-            // midpoint1 illuminated / upper tangent, midpoint2 illuminated / upper tangent
-            else if (((v1PrevTurn < 0 && v1NextTurn > 0) || (v1PrevTurn > 0 && v1NextTurn > 0)) && ((v2PrevTurn < 0 && v2NextTurn > 0) || (v2PrevTurn > 0 && v2NextTurn > 0))) {
-                if (crossProduct(v2, v1, p1) > 0) {
-                    left = (mid1 + 1) % hullPointsCount;
-                }
-                else {
-                    right = (((mid1 - 1) % hullPointsCount) + hullPointsCount) % hullPointsCount;
-                }
+            else {
+                right = mid1Prev;
             }
         }
     }
-    
+
+    hullStates.set(hull, candidate.index);
+    return candidate;
+}
+exports.jarvisBinary = jarvisBinary;
+
+function jarvisMarch(miniHulls, points, m) {
     var p0 = new Point(-Infinity, 0);
     var p1 = getP1(points);
     
     var hullPoints = [p1];
+    var hullStates = new Map();
+    for (const hull of miniHulls) {
+        hullStates.set(hull, 0);
+    }
     for (let i = 0; i < m; i++) {
         let curBest = null;
         
         const temp = states.slice();
         for (let j = 0; j < miniHulls.length; j++) {
             const curHull = miniHulls[j];
-            const bestOfHull = binarySearchHull(curHull);
             
-            if (!curBest || bestOfHull.angle > curBest.angle) {  // TODO: if there's time, handle edge case where two points are the best angle, then choose the one closest to p1.
+            if (!chanImproved || i === 0) {
+                var bestOfHull = jarvisBinary(p0, p1, hullStates, curHull);
+            }
+            else {
+                var bestOfHull = jarvisWalk(p0, p1, hullStates, curHull);
+            }
+            
+            if (!curBest || bestOfHull.angle >= curBest.angle) {
+                // if two points have max angle, the furthest point wins as specified in chan's paper.
+                if (curBest && bestOfHull.angle === curBest.angle && getDistanceBetweenPoints(p1, bestOfHull) < getDistanceBetweenPoints(p1, curBest)) {
+                    break;
+                }
+                
                 curBest = bestOfHull;
             }
 
             // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(p1, bestOfHull.point, 5, "grey")])});
-            states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([new Edge(p1, bestOfHull.point, 5, "grey")]), i === 0 ? explanations.jarvisMarch1 : explanations.jarvisMarch2));
+            states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([new Edge(p1, bestOfHull.point, 5, "grey")]), explanations.jarvisBinaryDone));
         }
         
         hullPoints.push(curBest.point);
@@ -796,7 +885,6 @@ function chan(points) {
         originalVertices.push(new Point(p.x, p.y, p.radius, p.color));
     }
 
-    // states.push({vertices: originalVertices, edges: []});
     states.push(new State(originalVertices, [], explanations.generatedRandomPoints));
     var n = points.length;
 
@@ -806,54 +894,111 @@ function chan(points) {
         const m = !increaseMSlower ? Math.pow(2, Math.pow(2, t)) : Math.pow(2, t);
         const groupCount = Math.ceil(n / m);
 
-        var partition = function(m) {
-            let groups = Array.from(Array(groupCount), () => new Array());
-
-            var groupColor = randColor();
-            var prevIdx = 0;
-            for (let i = 0; i < points.length; i++) {
-                var curIdx = Math.floor(i / m);
-
-                if (curIdx !== prevIdx) {
-                    groupColor = randColor();
-                    prevIdx = curIdx;
-                }
-
-                points[i].color = groupColor;
-                groups[curIdx].push(points[i]);
-            }
-
-            return groups;
-        }
-
-        var groups = partition(m);
-
+        var groups = splitPoints(points, m);
         var partitionedVertices = [];
         for (const group of groups) {
             for (const p of group) {
                 partitionedVertices.push(new Point(p.x, p.y, p.radius, p.color));
             }
         }
-        // states.push({vertices: partitionedVertices, edges: []});
+
         states.push(new State(partitionedVertices, [], explanations.partition));
 
-        var miniHulls = Array.from(Array(groupCount), () => new Array());
+        var miniHulls = [];
         for (let i = 0; i < groups.length; i++) {   // find mini hulls for jarvis march
-            miniHulls[i] = grahamScan(groups[i]);
+            miniHulls.push(grahamScan(groups[i]));
         }
 
-        let hullPoints = jarvisMarch(points, miniHulls, m);
+        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges, explanations.grahamScanDone));
+        let hullPoints = jarvisMarch(miniHulls, points, m);
         if (arePointsEqual(hullPoints[0], hullPoints[hullPoints.length - 1])) {
             hullPoints.pop();   // remove duplicate vertex
             return hullPoints;
         }
 
-        // states.push({vertices: originalVertices, edges: []});
         states.push(new State(originalVertices, [], explanations.increaseMAndRestart));
         clearRender();
     }
 }
 exports.chan = chan;
+
+/*
+CHAN'S ALGORITHM END
+*/
+
+
+
+/*
+IMPROVED CHAN'S ALGORITHM BEGIN
+*/
+
+/**
+ * Compute the convex hull of a set of points using a modified version of chan's algorithm
+ * Modifications include:
+ * 1. Cache the hull points found during previous iterations.
+ * 2. Only consider points found using graham's algorithm during subsequent iterations
+ * 3. Modify the value of m to be the min between 2 ^ (t ^ 2) and n.
+ * @param grid
+ * @returns
+ */
+ function chanWithHullCache(points) {
+    var originalVertices = [];
+    for (const p of points) {
+        originalVertices.push(new Point(p.x, p.y, p.radius, p.color));
+    }
+    states.push(new State(originalVertices, [], explanations.generatedRandomPoints));
+
+    var p1 = getP1(points);
+    var p0 = new Point(p1.x - 1, p1.y);
+    var n = points.length;
+    var stop = Math.ceil(Math.log2(Math.log2(n)));
+    var hullPoints = [p0, p1];
+    var grahamHulls = [];
+    for (var i = 1; i <= stop + 1; i++) {
+        if (grahamHulls.length) {
+            points = grahamHulls.reduce(function (newPoints, hull) {
+                newPoints.push.apply(newPoints, hull);
+                return newPoints;
+            }, []);
+        }
+
+        n = points.length;
+        var m = Math.min(Math.pow(2, Math.pow(i, 2)), n);
+        var splitPointsArray = splitPoints(points, m);
+        var partitionedVertices = [];
+        for (const group of splitPointsArray) {
+            for (const p of group) {
+                partitionedVertices.push(new Point(p.x, p.y, p.radius, p.color));
+            }
+        }
+        states.push(new State(partitionedVertices, [], explanations.partition));
+
+        grahamHulls = [];
+        for (var i_1 = 0; i_1 < splitPointsArray.length; i_1++) {
+            var grahamHull = grahamScan(splitPointsArray[i_1]);
+            grahamHulls.push(grahamHull);
+        }
+        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges, explanations.grahamScanDone));
+
+        jarvisMarch(grahamHulls, hullPoints, m);
+        // TODO: jarvisMarch functions differ. one returns while the other updates as reference.
+        if (arePointsEqual(hullPoints[1], hullPoints[hullPoints.length - 1])) {
+            // get rid of the fake point at the start for only the first iteration
+            hullPoints.shift();
+            return hullPoints;
+        }
+
+        states.push(new State(originalVertices, [], explanations.increaseMAndRestart));
+        clearRender();
+    }
+}
+exports.chanWithHullCache = chanWithHullCache;
+
+/*
+IMPROVED CHAN'S ALGORITHM END
+*/
+
+
 
 var vertexCountFormSubmit = document.getElementById("vertex-count-form-submit");
 vertexCountFormSubmit.onclick = function(event) {
@@ -878,7 +1023,4 @@ vertexCountFormSubmit.onclick = function(event) {
     renderState(states[stepIdx]);
 }
 
-/*
-CHAN'S ALGORITHM END
-*/
 },{"./explanations":1}]},{},[2]);
