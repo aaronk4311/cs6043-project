@@ -1,0 +1,32 @@
+{
+    "name": "project",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf build",
+        "test": "jest --verbose"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/aaronk4311/cs6043-project.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/aaronk4311/cs6043-project/issues"
+    },
+    "homepage": "https://github.com/aaronk4311/cs6043-project#readme",
+    "devDependencies": {
+        "d3": "^7.4.4",
+        "jest": "^27.5.1"
+    },
+    "dependencies": {
+        "browserify": "^17.0.0"
+    }
+}
