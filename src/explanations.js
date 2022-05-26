@@ -4,7 +4,7 @@ exports.intro = lines("In this demo, we visualize Chan's Algorithm for a given s
 
 exports.generatedRandomPoints = lines("A set of random points <em>P</em> has been generated. Next, we'll partition <em>P</em> into <em>ceil(n/m)</em> subsets, each of size at most <em>m</em>.")
 
-exports.partition = lines("The points are now partitioned into subsets of the original input set of points. Each subset is assigned a random color and all of its points will take on that color.");
+exports.partition = lines("The points are now partitioned into subsets of the input set of points. Each subset is assigned a random color and all of its points will take on that color.");
 
 exports.grahamScan = lines("With all points partitioned into subsets, we run Graham Scan on all subsets to form the minihulls.");
 
@@ -26,3 +26,5 @@ exports.increaseMAndRestart = lines("The number of iterations will now exceed <e
 exports.foundConvexHull = lines("Convex hull successfully constructed.", "Note that with standard Chan's Algorithm, the amount of points that we would need to generate to see more than three passes of Chan's (a pass being every time <em>m</em> is updated) is too much for most machines to handle. If you generate the maximum number of points specified in this demo, you'll find that it won't take more than three passes to construct the convex hull.", "Chan's Algorithm does have extensions and modifications, and we implemented some of them in this demo so that you can select them to see the differences compared to standard Chan's Algorithm. For example, binary search turns out to be unnecessary, and so we can shave off a <em>log</em> factor when we're finding the candidate point in each minihull.");
 
 exports.cachedHullPoints = lines("The option to cache found hull points was selected, so we continue where we left off from the last iteration of Chan's. The previously found hull points and their respective edges are also visualized for your convenience.");
+
+exports.discardNonHullPoints = lines("The option to discard non-hull points was selected. We've discarded the points that were not part of their respective minihulls in the previous iteration.");

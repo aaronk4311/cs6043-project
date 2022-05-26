@@ -602,7 +602,6 @@ autorunBtn.onclick = async function(event) {
         stepIdx++;
         await timer(autorunSpeed);
     }
-    text.html(explanations.foundConvexHull);
 
     stepIdx--;
     document.getElementById("prev-step").disabled = false;
@@ -951,7 +950,9 @@ function jarvisMarch(grahamHulls, hullPoints, m, stepsObj) {
             initialState[initialState.length - 1].edges.concat([new Edge(p1, currentBest.point, 5, "black", 1, RenderTypes.HULL)]), curExplanation));
         
         if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
-            states[states.length - 1].text = explanations.foundConvexHull;
+            if (!options.cacheHullPoints) {
+                states[states.length - 1].text = explanations.foundConvexHull;
+            }
             return;
         }
     }
@@ -982,7 +983,9 @@ function chan(points, stepsObj) {
                 return newPoints;
             }, []);
             
+
             n = points.length;
+            states.push(new State(points.map((p) => new Point(p.x, p.y, p.radius)), [], explanations.discardNonHullPoints));
         }
 
         var m = Math.min(n, Math.pow(2, Math.pow(2, t)));
@@ -1026,6 +1029,33 @@ function chan(points, stepsObj) {
         if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
             hullPoints.pop();   // remove duplicate hull point
             hullPoints.shift(); // remove dummy point (initial p0)
+
+            if (options.cacheHullPoints) {
+                let regularPointsRedraw = [],
+                    hullPointsRedraw = [],
+                    regularEdgesRedraw = [],
+                    hullEdgesRedraw = [];
+
+                for (let p of states[states.length - 1].points) {
+                    if (p.type === RenderTypes.REGULAR) {
+                        regularPointsRedraw.push(new Point(p.x, p.y, p.radius, p.color, p.opacity, p.type));
+                    }
+                    else if (p.type === RenderTypes.HULL) {
+                        hullPointsRedraw.push(new Point(p.x, p.y, p.radius, p.color, 1, p.type));
+                    }
+                }
+
+                for (let e of states[states.length - 1].edges) {
+                    if (e.type === RenderTypes.REGULAR) {
+                        regularEdgesRedraw.push(new Edge(e.p1, e.p2, e.size, e.color, 1, e.type));
+                    }
+                    else if (e.type === RenderTypes.HULL) {
+                        hullEdgesRedraw.push(new Edge(e.p1, e.p2, e.size, e.color, 1, e.type));
+                    }
+                }
+                states.push(new State(regularPointsRedraw.concat(hullPointsRedraw), regularEdgesRedraw.concat(hullEdgesRedraw), explanations.foundConvexHull));
+            }
+
             return hullPoints;
         }
 
@@ -1071,3 +1101,4 @@ pointCountFormSubmit.onclick = function(event) {
 
 // TODO: handle degenerate cases.
 // TODO: better html and css for demo
+// TODO: 

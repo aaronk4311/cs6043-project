@@ -5,7 +5,7 @@ exports.intro = lines("In this demo, we visualize Chan's Algorithm for a given s
 
 exports.generatedRandomPoints = lines("A set of random points <em>P</em> has been generated. Next, we'll partition <em>P</em> into <em>ceil(n/m)</em> subsets, each of size at most <em>m</em>.")
 
-exports.partition = lines("The points are now partitioned into subsets of the original input set of points. Each subset is assigned a random color and all of its points will take on that color.");
+exports.partition = lines("The points are now partitioned into subsets of the input set of points. Each subset is assigned a random color and all of its points will take on that color.");
 
 exports.grahamScan = lines("With all points partitioned into subsets, we run Graham Scan on all subsets to form the minihulls.");
 
@@ -28,6 +28,7 @@ exports.foundConvexHull = lines("Convex hull successfully constructed.", "Note t
 
 exports.cachedHullPoints = lines("The option to cache found hull points was selected, so we continue where we left off from the last iteration of Chan's. The previously found hull points and their respective edges are also visualized for your convenience.");
 
+exports.discardNonHullPoints = lines("The option to discard non-hull points was selected. We've discarded the points that were not part of their respective minihulls in the previous iteration.");
 },{}],2:[function(require,module,exports){
 var explanations = require("./explanations");
 
@@ -633,7 +634,6 @@ autorunBtn.onclick = async function(event) {
         stepIdx++;
         await timer(autorunSpeed);
     }
-    text.html(explanations.foundConvexHull);
 
     stepIdx--;
     document.getElementById("prev-step").disabled = false;
@@ -982,7 +982,9 @@ function jarvisMarch(grahamHulls, hullPoints, m, stepsObj) {
             initialState[initialState.length - 1].edges.concat([new Edge(p1, currentBest.point, 5, "black", 1, RenderTypes.HULL)]), curExplanation));
         
         if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
-            states[states.length - 1].text = explanations.foundConvexHull;
+            if (!options.cacheHullPoints) {
+                states[states.length - 1].text = explanations.foundConvexHull;
+            }
             return;
         }
     }
@@ -1013,7 +1015,9 @@ function chan(points, stepsObj) {
                 return newPoints;
             }, []);
             
+
             n = points.length;
+            states.push(new State(points.map((p) => new Point(p.x, p.y, p.radius)), [], explanations.discardNonHullPoints));
         }
 
         var m = Math.min(n, Math.pow(2, Math.pow(2, t)));
@@ -1057,6 +1061,33 @@ function chan(points, stepsObj) {
         if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
             hullPoints.pop();   // remove duplicate hull point
             hullPoints.shift(); // remove dummy point (initial p0)
+
+            if (options.cacheHullPoints) {
+                let regularPointsRedraw = [],
+                    hullPointsRedraw = [],
+                    regularEdgesRedraw = [],
+                    hullEdgesRedraw = [];
+
+                for (let p of states[states.length - 1].points) {
+                    if (p.type === RenderTypes.REGULAR) {
+                        regularPointsRedraw.push(new Point(p.x, p.y, p.radius, p.color, p.opacity, p.type));
+                    }
+                    else if (p.type === RenderTypes.HULL) {
+                        hullPointsRedraw.push(new Point(p.x, p.y, p.radius, p.color, 1, p.type));
+                    }
+                }
+
+                for (let e of states[states.length - 1].edges) {
+                    if (e.type === RenderTypes.REGULAR) {
+                        regularEdgesRedraw.push(new Edge(e.p1, e.p2, e.size, e.color, 1, e.type));
+                    }
+                    else if (e.type === RenderTypes.HULL) {
+                        hullEdgesRedraw.push(new Edge(e.p1, e.p2, e.size, e.color, 1, e.type));
+                    }
+                }
+                states.push(new State(regularPointsRedraw.concat(hullPointsRedraw), regularEdgesRedraw.concat(hullEdgesRedraw), explanations.foundConvexHull));
+            }
+
             return hullPoints;
         }
 
@@ -1102,4 +1133,5 @@ pointCountFormSubmit.onclick = function(event) {
 
 // TODO: handle degenerate cases.
 // TODO: better html and css for demo
+// TODO: 
 },{"./explanations":1}]},{},[2]);
