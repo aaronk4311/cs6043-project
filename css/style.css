@@ -56,6 +56,10 @@ rect {
 
 .nav-checkboxes {
     padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 100%;
 }
 
 .tooltip-inner {

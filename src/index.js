@@ -56,8 +56,8 @@ exports.crossProduct = crossProduct;
  * @returns {@link number} distance between {@param p1} and {@param p2}
  */
 function getDistanceBetweenPoints(p1, p2) {
-    const deltaXSquared = Math.pow(p1.x - p2.x, 2);
-    const deltaYSquared = Math.pow(p1.y - p2.y, 2);
+    var deltaXSquared = Math.pow(p1.x - p2.x, 2);
+    var deltaYSquared = Math.pow(p1.y - p2.y, 2);
     return Math.sqrt(deltaXSquared + deltaYSquared);
 }
 exports.getDistanceBetweenPoints = getDistanceBetweenPoints;
@@ -69,10 +69,11 @@ exports.getDistanceBetweenPoints = getDistanceBetweenPoints;
  * @param points array of {@link Point[]}
  * @returns {@link Point} with the minimum y coordinate.
  */
-function getP1(points) {
-    let lowestYPoint = points[0];
+function getP1(points, stepsObj) {
+    var lowestYPoint = points[0];
     for (let i = 1; i < points.length; i++) {
-        if (points[i].y > lowestYPoint.y) { // have to update lowest point if current point is "greater" since going down a computer screen increases y value.
+        stepsObj.steps++;
+        if (points[i].y > lowestYPoint.y) { // TODO: note, i had to swap operator from < to > since y coordinates increase going down on a computer.
             lowestYPoint = points[i];
         }
         else if (points[i].y === lowestYPoint.y) {
@@ -92,9 +93,10 @@ exports.getP1 = getP1;
  * @returns sorted {@link Point[]}s
  * O(mlog(m)) runtime
  */
-function sortInOrderOfAngleWithP1(points) { // TODO: note i had to swap angle1 and angle2, and also distance1 and distance2 in calculation to get expected output. not sure why.
-    var p1 = getP1(points);
+function sortInOrderOfAngleWithP1(points, stepsObj) { // TODO: note i had to swap angle1 and angle2, and also distance1 and distance2 in calculation to get expected output. not sure why.
+    var p1 = getP1(points, stepsObj);
     return points.sort(function (p2, p3) {
+        stepsObj.steps++;
         var angle1 = getAngle(p1, p3);
         var angle2 = getAngle(p1, p2);
         if (angle1 !== angle2) {
@@ -113,6 +115,10 @@ function getAngle(point1, point2) {
 exports.getAngle = getAngle;
 
 function getAngleBetween3Points(point1, point2, point3) {
+    if (point1 === point2 || point1 === point3 || point2 === point3) {
+        return -Infinity;
+    }
+
     var angle = getAngle(point2, point3) - getAngle(point2, point1);
     return angle >= 0 ? angle : angle + 360;
     // return Math.abs(getAngle(point2, point3) - getAngle(point2, point1));
@@ -126,13 +132,15 @@ exports.getAngleBetween3Points = getAngleBetween3Points;
  * @param m Group size
  * @returns Array of arrays with size m
  */
-function splitPoints(points, m) {
+function splitPoints(points, m, stepsObj) {
     var result = [];
     for (var i = 0; i < points.length;) {
+        stepsObj.steps++;
         var temp = [];
         var start = i;
         var groupColor = randColor();
         for (; i < m + start; i++) {
+            stepsObj.steps++;
             if (i === points.length) {
                 break;
             }
@@ -183,65 +191,67 @@ function goRight(hull, p1, p2, index) {
 var states = [];
 
 class State {
-    vertices;
+    points;
     edges;
     text;
-    constructor(vertices = [], edges = [], text = null) {
-        this.vertices = vertices;
+    constructor(points = [], edges = [], text = null) {
+        this.points = points;
         this.edges = edges;
         this.text = text;
     }
 }
 
-function generateRandomPoints(vertexCount) {
-    var vertexSet = []
+function generateRandomPoints(pointCount) {
+    var pointSet = []
 
-    for (let i = 0; i < vertexCount; i++) {
+    for (let i = 0; i < pointCount; i++) {
         var x = d3.randomUniform(10, width - 10)(), y = d3.randomUniform(10, height - 10)();
-        vertexSet.push(new Point(x, y));
+        pointSet.push(new Point(x, y));
     }
 
-    return vertexSet;
+    return pointSet;
 }
 exports.generateRandomPoints = generateRandomPoints;
 
-function drawVertex(p) {
-    gVertices.append("circle")
-        .attr("id", "(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + p.color.toString() + ")")
+function drawPoint(p) {
+    gpoints.append("circle")
+        .attr("id", "" + renderMap.get(p.type).toString() + ": " + "(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + ")")
         .attr("r", p.radius)
         .attr("cx", xRange(p.x))
         .attr("cy", yRange(p.y))
         .style("fill", p.color)
         .style("stroke", "black")
+        .style("opacity", p.opacity)
         .style("stroke-width", 1);
 }
 
 function drawEdge(e) {
     // draw an edge connecting two points
     gEdges.append("line")
-        .attr("id", "(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + e.size.toString() + e.color.toString() + ")")
+        .attr("id", "" + renderMap.get(e.type).toString() + ", " + "(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + ")")
         .attr("x1", xRange(e.p1.x))
         .attr("y1", yRange(e.p1.y))
         .attr("x2", xRange(e.p2.x))
         .attr("y2", yRange(e.p2.y))
         .style("stroke", e.color)
+        .style("opacity", e.opacity)
         .style("stroke-width", e.size);
 }
 
-function removeVertex(p) {  // TODO: if multiple vertices are drawn at the same position, they share the same id and only one gets removed
-    gVertices.select("circle[id='(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + p.color.toString() + ")']").remove();
+function removepoint(p) {
+    gpoints.select("circle[id='" + renderMap.get(p.type).toString() + ": " + "(" + p.x.toString() + ", " + p.y.toString() + p.radius.toString() + ")']").remove();
 }
 
-function removeEdge(e) {   // TODO: same issue as removeVertex
-    gEdges.select("line[id='(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + e.size.toString() + e.color.toString() +  ")']").remove();
+function removeEdge(e) {
+    gEdges.select("line[id='" + renderMap.get(e.type).toString() + ", " + "(" + e.p1.x.toString() + ", " + e.p1.y.toString() + "), (" + e.p2.x.toString() + ", " + e.p2.y.toString() + ")']").remove();
 }
 
 function removeAllEdges() {
     gEdges.selectAll("line").remove();
 }
 
-function removeAllVertices() {
-    gVertices.selectAll("circle").remove();
+function removeAllpoints() {
+    gpoints.selectAll("circle").remove();
 }
 // rendering functions end
 
@@ -255,8 +265,8 @@ UTILITY FUNCTIONS END
 DEMO PAGE FUNCTIONS BEGIN
 */
 
-var minVerticesAllowed = 3,
-    maxVerticesAllowed = 1000;
+var minpointsAllowed = 3,
+    maxpointsAllowed = 1000;
 
 var defaultAutorunSpeed = 200,
     autorunSpeed = defaultAutorunSpeed;
@@ -278,34 +288,34 @@ text.html(explanations.intro);
 
 var navContainer = column2.append("div").attr("class", "row").attr("id", "nav-container");
 
-// vertex count input
+// point count input
 var navColumn1 = navContainer.append("div").attr("class", "col-sm");
 var navColumn2 = navContainer.append("div").attr("class", "col-sm");
 
-var vertexCountForm = navColumn1.append("form")
+var pointCountForm = navColumn1.append("form")
     .attr("class", "form-inline")
     .attr("style", "padding:5px");
 
-var vertexCountFormGroup = vertexCountForm.append("div")
+var pointCountFormGroup = pointCountForm.append("div")
     .attr("class", "form-group");
 
-var vertexCountFormLabel = vertexCountFormGroup.append("label")
-    .text("Number of Points (" + minVerticesAllowed + " - " + maxVerticesAllowed + ")");
+var pointCountFormLabel = pointCountFormGroup.append("label")
+    .text("Number of Points (" + minpointsAllowed + " - " + maxpointsAllowed + ")");
 
-var vertexCountFormInput = vertexCountFormGroup.append("input")
+var pointCountFormInput = pointCountFormGroup.append("input")
     .attr("class", "form-control")
-    .attr("id", "vertex-count-input")
+    .attr("id", "point-count-input")
     .attr("type", "number")
-    .attr("min", minVerticesAllowed)
-    .attr("max", maxVerticesAllowed)
+    .attr("min", minpointsAllowed)
+    .attr("max", maxpointsAllowed)
     .attr("style", "max-width:30%");
     
-var vertexCountFormSubmit = vertexCountForm.append("button")
-    .attr("id", "vertex-count-form-submit")
+var pointCountFormSubmit = pointCountForm.append("button")
+    .attr("id", "point-count-form-submit")
     .attr("class", "btn btn-primary")
     .attr("disabled", true)
     .text("Generate Points");
-// end vertex count input
+// end point count input
 
 var startStep = navColumn1.append("button")
     .attr("id", "start-step")
@@ -374,10 +384,10 @@ var navCheckboxes1 = navControlGroup.append("div").attr("class", "nav-checkboxes
 var navCheckboxes2 = navControlGroup.append("div").attr("class", "nav-checkboxes");
 
 var checkbox1 = navCheckboxes1.append("div").attr("class", "form-check");
-checkbox1.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "increase-m-slower");
+checkbox1.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "modified-m-1");
 checkbox1.append("label")
     .attr("class", "form-check-label")
-    .attr("for", "increase-m-slower")
+    .attr("for", "modified-m-1")
     .text("Use m = 2^t");
 checkbox1.append("i")
     .attr("id", "info-icon")
@@ -388,32 +398,85 @@ checkbox1.append("i")
     .attr("data-bs-html", true);
 
 var checkbox2 = navCheckboxes1.append("div").attr("class", "form-check");
-checkbox2.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "fast-forward-graham-scan");
-checkbox2.append("label")
+    checkbox2.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "modified-m-2");
+    checkbox2.append("label")
+        .attr("class", "form-check-label")
+        .attr("for", "modified-m-2")
+        .text("Use m = 2^(t^2)");
+    checkbox2.append("i")
+        .attr("id", "info-icon")
+        .attr("class", "fa-solid fa-circle-info")
+        .attr("data-bs-toggle", "tooltip")
+        .attr("data-bs-original-title", "Standard Chan's Algorithm uses <em>m = 2<sup>2<sup>t</sup></sup></em>. TODO: time complexity")
+        .attr("data-bs-html", true);
+
+var checkbox3 = navCheckboxes1.append("div").attr("class", "form-check");
+    checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "modified-H");
+    checkbox3.append("label")
+        .attr("class", "form-check-label")
+        .attr("for", "modified-H")
+        .text("Use H = m / logm");
+    checkbox3.append("i")
+        .attr("id", "info-icon")
+        .attr("class", "fa-solid fa-circle-info")
+        .attr("data-bs-toggle", "tooltip")
+        .attr("data-bs-original-title", "Rather than using <em>m = H</em>, use <em>H = m / logm</em>")
+        .attr("data-bs-html", true);
+
+var checkbox4 = navCheckboxes1.append("div").attr("class", "form-check");
+checkbox4.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "fast-forward-graham-scan");
+checkbox4.append("label")
     .attr("class", "form-check-label")
     .attr("for", "fast-forward-graham-scan")
-    .text("Fast Forward Building Minihulls");
-checkbox2.append("i")
+    .text("Fast Forward Minihulls");
+checkbox4.append("i")
     .attr("id", "info-icon")
     .attr("class", "fa-solid fa-circle-info")
     .attr("data-bs-toggle", "tooltip")
     .attr("data-bs-original-title", "Skips straight to the end of constructing each minihull in the visualization.")
     .attr("data-bs-placement", "left")
     .attr("data-bs-html", true);
-    
-var checkbox3 = navCheckboxes1.append("div").attr("class", "form-check");
-checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "chan-improved");
-checkbox3.append("label")
-    .attr("class", "form-check-label")
-    .attr("for", "chan-improved")
-    .text("Run with Improvements");
-checkbox3.append("i")
-    .attr("id", "info-icon")
-    .attr("class", "fa-solid fa-circle-info")
-    .attr("data-bs-toggle", "tooltip")
-    .attr("data-bs-original-title", "Improvements include:<br><ul><li>Instead of using binary search to find max tangents on each minihull, we just binary search once at the start of the Jarvis' March.</li><li>Discard points that did not make it into any of the minihulls during Graham Scan.</li><li>Cache hull points so they don't have to be recomputed in future iterations of Chan's.</li><li>TODO: Rather than using <em>m = H</em>, use <em>H = m / logm</em></li><li>Since we're discarding points, we can grow <em>m</em> slower, <em>m = 2<sup>t<sup>2</sup></sup></em>.</li></ul>")
-    .attr("data-bs-placement", "left")
-    .attr("data-bs-html", true);
+
+var checkbox5 = navCheckboxes2.append("div").attr("class", "form-check");
+    checkbox5.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "cache-tangent-points");
+    checkbox5.append("label")
+        .attr("class", "form-check-label")
+        .attr("for", "cache-tangent-points")
+        .text("Cache Tangent Points");
+    checkbox5.append("i")
+        .attr("id", "info-icon")
+        .attr("class", "fa-solid fa-circle-info")
+        .attr("data-bs-toggle", "tooltip")
+        .attr("data-bs-original-title", "Rather than binary searching to find the tangent/candidate points in Jarvis' March every time, we only binary search at the start of Jarvis' March in each iteration of Chan's, cache those points, then we can just walk around each minihull in the subsequent iterations of the Jarvis' March step, we can find the new tangent on each minihull by walking CCW through them.")
+        .attr("data-bs-placement", "left")
+        .attr("data-bs-html", true);
+
+var checkbox6 = navCheckboxes2.append("div").attr("class", "form-check");
+    checkbox6.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "cache-hull-points");
+    checkbox6.append("label")
+        .attr("class", "form-check-label")
+        .attr("for", "cache-hull-points")
+        .text("Cache Hull Points");
+    checkbox6.append("i")
+        .attr("id", "info-icon")
+        .attr("class", "fa-solid fa-circle-info")
+        .attr("data-bs-toggle", "tooltip")
+        .attr("data-bs-original-title", "In each iteration of Chan's, if we don't find conv<em>(P)</em>, then all hull points are discarded and we have to find those points again. Instead of having to repeatedly find those hull points in every subsequent iteration of Chan's, we cache those points and continue building the convex hull from the last hull point we found.")
+        .attr("data-bs-html", true);
+
+var checkbox7 = navCheckboxes2.append("div").attr("class", "form-check");
+    checkbox7.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "discard-nonhull-points");
+    checkbox7.append("label")
+        .attr("class", "form-check-label")
+        .attr("for", "discard-nonhull-points")
+        .text("Discard Non-Hull Points");
+    checkbox7.append("i")
+        .attr("id", "info-icon")
+        .attr("class", "fa-solid fa-circle-info")
+        .attr("data-bs-toggle", "tooltip")
+        .attr("data-bs-original-title", "During the Graham Scan step where we compute all the minihulls, not all the points will be a point on a minihull. Since it is not even a minihull, then it definitely cannot be one of the points that make up the convex hull of <em>P</em>; discard those points so subsequent iterations of Chan's will have to process fewer points.")
+        .attr("data-bs-placement", "left")
+        .attr("data-bs-html", true);
 
 var demoOutput = column2.append("svg")
     .attr("class", "demo-output")
@@ -424,7 +487,7 @@ demoOutput.append("rect")
     .attr("width", width)
     .attr("height", height);
 
-var gVertices = demoOutput.append("g"),
+var gpoints = demoOutput.append("g"),
     gEdges = demoOutput.append("g");
 // demo container end
 
@@ -435,14 +498,14 @@ yRange.domain([0, height]);
 
 // render state
 function clearRender() {
-    removeAllVertices();
+    removeAllpoints();
     removeAllEdges();
 }
 
 function renderState(state) {
     clearRender();
 
-    for (const vertex of state.vertices) drawVertex(vertex);
+    for (const point of state.points) drawPoint(point);
     for (const edge of state.edges) drawEdge(edge);
     if (state.text) text.html(state.text);
 }
@@ -450,10 +513,10 @@ function renderState(state) {
 
 
 // step through algorithm
-var vertexCountInput = document.getElementById("vertex-count-input");
-vertexCountInput.oninput = function(event) {
-    var vertexCount = Number(vertexCountInput.value);
-    document.getElementById("vertex-count-form-submit").disabled = (vertexCount < vertexCountInput.min || vertexCount > vertexCountInput.max);
+var pointCountInput = document.getElementById("point-count-input");
+pointCountInput.oninput = function(event) {
+    var pointCount = Number(pointCountInput.value);
+    document.getElementById("point-count-form-submit").disabled = (pointCount < pointCountInput.min || pointCount > pointCountInput.max);
 }
 
 var stepIdx = 0;
@@ -529,8 +592,8 @@ autorunBtn.onclick = async function(event) {
     document.getElementById("end-step").disabled = true;
     document.getElementById("prev-step").disabled = true;
     document.getElementById("start-step").disabled = true;
-    document.getElementById("vertex-count-input").disabled = true;
-    document.getElementById("vertex-count-form-submit").disabled = true;
+    document.getElementById("point-count-input").disabled = true;
+    document.getElementById("point-count-form-submit").disabled = true;
     document.getElementById("autorun").disabled = true;
 
     while (stepIdx < states.length) {
@@ -543,8 +606,8 @@ autorunBtn.onclick = async function(event) {
     stepIdx--;
     document.getElementById("prev-step").disabled = false;
     document.getElementById("start-step").disabled = false;
-    document.getElementById("vertex-count-input").disabled = false;
-    document.getElementById("vertex-count-form-submit").disabled = false;
+    document.getElementById("point-count-input").disabled = false;
+    document.getElementById("point-count-form-submit").disabled = false;
     document.getElementById("autorun").disabled = false;
 }
 
@@ -554,28 +617,60 @@ speedSliderSubmit.oninput = function(event) {
     autorunSpeed = defaultAutorunSpeed / speedSliderSubmit.value;
 }
 
-var increaseMSlower = false,
-    fastForwardGrahamScan = false,
-    chanImproved = false;
+var options = {
+    modifiedM1: false,
+    modifiedM2: false,
+    modifiedH: false,
+    fastForwardGrahamScan: false,
+    cacheTangentPoints: false,
+    cacheHullPoints: false,
+    removeNonHullGrahamPoints: false
+};
 
-var increaseMSlowerBtn = document.getElementById("increase-m-slower");
-increaseMSlowerBtn.oninput = function(event) {
+var modifiedM1Btn = document.getElementById("modified-m-1");
+modifiedM1Btn.oninput = function(event) {
     event.preventDefault();
-    increaseMSlower = !increaseMSlower;
-    chanImprovedBtn.disabled = !chanImprovedBtn.disabled;
+    options.modifiedM1 = !options.modifiedM1;
+    options.modifiedM2 = false;
+    modifiedM2Btn.disabled = !modifiedM2Btn.disabled;
+}
+
+var modifiedM2Btn = document.getElementById("modified-m-2");
+modifiedM2Btn.oninput = function(event) {
+    event.preventDefault();
+    options.modifiedM2 = !options.modifiedM2;
+    options.modifiedM1 = false;
+    modifiedM1Btn.disabled = !modifiedM1Btn.disabled;
+}
+
+var modifiedHBtn = document.getElementById("modified-H");
+modifiedHBtn.oninput = function(event) {
+    event.preventDefault();
+    options.modifiedH = !options.modifiedH;
 }
 
 var fastForwardGrahamScanBtn = document.getElementById("fast-forward-graham-scan");
 fastForwardGrahamScanBtn.oninput = function(event) {
     event.preventDefault();
-    fastForwardGrahamScan = !fastForwardGrahamScan;
+    options.fastForwardGrahamScan = !options.fastForwardGrahamScan;
 }
 
-var chanImprovedBtn = document.getElementById("chan-improved");
-chanImprovedBtn.oninput = function(event) {
+var cacheTangentPointsBtn = document.getElementById("cache-tangent-points");
+cacheTangentPointsBtn.oninput = function(event) {
     event.preventDefault();
-    chanImproved = !chanImproved;
-    increaseMSlowerBtn.disabled = !increaseMSlowerBtn.disabled;
+    options.cacheTangentPoints = !options.cacheTangentPoints;
+}
+
+var cacheHullPointsBtn = document.getElementById("cache-hull-points");
+cacheHullPointsBtn.oninput = function(event) {
+    event.preventDefault();
+    options.cacheHullPoints = !options.cacheHullPoints;
+}
+
+var removeNonHullGrahamPointsBtn = document.getElementById("discard-nonhull-points");
+removeNonHullGrahamPointsBtn.oninput = function(event) {
+    event.preventDefault();
+    options.removeNonHullGrahamPoints = !options.removeNonHullGrahamPoints;
 }
 
 // end step through algorithm
@@ -590,16 +685,26 @@ DEMO PAGE FUNCTIONS END
 CHAN'S ALGORITHM BEGIN
 */
 
+const RenderTypes = Object.freeze({"REGULAR": 0, "HELPER": 1, "HULL": 2});
+const renderMap = new Map([
+    [0, "Regular"],
+    [1, "Helper"],
+    [2, "Hull"]
+]);
 class Point {
     x;
     y;
     radius;
     color;
-    constructor(x, y, radius = null, color = null) {
+    opacity;
+    type;
+    constructor(x, y, radius = null, color = null, opacity = null, type = null) {
         this.x = x;
         this.y = y;
         this.radius = radius ? radius : 4;
         this.color = color ? color : "black";
+        this.opacity = opacity ? opacity : 1;
+        this.type = type ? type : RenderTypes.REGULAR;
     }
 }
 exports.Point = Point;
@@ -609,11 +714,15 @@ class Edge {
     p2;
     size;
     color;
-    constructor(p1, p2, size = null, color = null) {
+    opacity;
+    type;
+    constructor(p1, p2, size = null, color = null, opacity = null, type = null) {
         this.p1 = p1;
         this.p2 = p2;
         this.size = size ? size : 2;
         this.color = color ? color : p1.color;
+        this.opacity = opacity ? opacity : 1;
+        this.type = type ? type : RenderTypes.REGULAR;
     }
 }
 exports.Edge = Edge;
@@ -624,59 +733,75 @@ exports.Edge = Edge;
  * @param points Array of {@link Point}s
  * @returns Array of {@link Point}s representing the convex hall
  */
-function grahamScan(points) {
-    var hullVertices = [],
-        hullEdges = [];
-
-    if (points.length === 0) return hullVertices;
-    const sortedPoints = sortInOrderOfAngleWithP1(points);
-
-    hullVertices.push(sortedPoints[0]);
-    for (let i = 1; i < sortedPoints.length; i++) {
+function grahamScan(points, stepsObj) {
+    const sortedPoints = sortInOrderOfAngleWithP1(points, stepsObj);
+    var hullStack = [];
+    for (let i = 0; i < sortedPoints.length; i++) {
+        stepsObj.steps++;
         const p3 = sortedPoints[i];
-        while (hullVertices.length >= 2 && crossProduct(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices), p3) >= 0) {
-            if (!fastForwardGrahamScan) {
-                states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice(0, -1)));
+        while (hullStack.length >= 2 && crossProduct(getNextToTopOfStack(hullStack), getTopOfStack(hullStack), p3) >= 0) {
+            if (!options.fastForwardGrahamScan) {
+                states.push(new State(states[states.length - 1].points, states[states.length - 1].edges.slice(0, -1)));
             }
-            hullVertices.pop();
-            hullEdges.pop();
+            stepsObj.steps++;
+            hullStack.pop();
         }
-        
-        hullVertices.push(p3);
-        hullEdges.push(new Edge(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices)));
-        // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(getNextToTopOfStack(hullVertices), getTopOfStack(hullVertices))])});
-        if (!fastForwardGrahamScan) {
-            states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([getTopOfStack(hullEdges)]), explanations.grahamScan));
+        hullStack.push(p3);
+        if (i > 0 && !options.fastForwardGrahamScan) {
+            const hullEdge = new Edge(getNextToTopOfStack(hullStack), getTopOfStack(hullStack));
+            states.push(new State(states[states.length - 1].points, states[states.length - 1].edges.concat([hullEdge]), explanations.grahamScan));
         }
     }
-    
-    // for "hulls" of size 2, do not connect last vertex with first, otherwise we get a duplicate edge visually
-    if (points.length > 2) {
-        hullEdges.push(new Edge(sortedPoints[0], getTopOfStack(hullVertices)));
-        // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(sortedPoints[0], getTopOfStack(hullVertices))])});
-        if (!fastForwardGrahamScan) states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([getTopOfStack(hullEdges)]), explanations.miniHullFound));
+
+    // for "hulls" of size 2, do not connect last point with first, otherwise we get a duplicate edge visually
+    if (points.length > 2 && !options.fastForwardGrahamScan) {
+        const hullEdge = new Edge(hullStack[0], getTopOfStack(hullStack));
+        states.push(new State(states[states.length - 1].points, states[states.length - 1].edges.concat([hullEdge]), explanations.grahamScan));
+    }
+    else if (options.fastForwardGrahamScan) {
+        let hullEdges = []
+        for (let i = 1; i < hullStack.length; i++) {
+            hullEdges.push(new Edge(hullStack[i - 1], hullStack[i]));
+        }
+        if (points.length > 2) {
+            hullEdges.push(new Edge(hullStack[0], getTopOfStack(hullStack)));
+        }
+        if (hullEdges.length > 0) {
+            states.push(new State(states[states.length - 1].points, states[states.length - 1].edges.concat(hullEdges), explanations.grahamScan));
+        }
     }
 
-    if (fastForwardGrahamScan) {
-        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat(hullEdges), explanations.fastForwardGrahamScan));
-    }
-
-    return hullVertices;
+    return hullStack;
 }
 exports.grahamScan = grahamScan;
 
-function jarvisWalk(p0, p1, hullStates, hull) {
+/**
+ * 
+ * @param hull minihull to walk through and find tangent
+ * @param p0 {@link Point} second to last hull edge found
+ * @param p1 {@link Point} last hull edge found
+ * @param hullStates caches last tangent for each minihull, so we can avoid binary searching
+ * @returns the lower tangent point of minihull that could potentially be the next hull edge
+ */
+function jarvisWalk(hull, p0, p1, hullStates, stepsObj) {
+    const temp = states[states.length - 1];
     var candidateIdx = hullStates.get(hull);
     var candidatePoint = hull[candidateIdx];
     var candidateAngle = (candidatePoint !== p1) ? getAngleBetween3Points(p0, p1, candidatePoint) : 0;
 
+    states.push(new State(temp.points, temp.edges.concat([new Edge(p1, candidatePoint, 5, "red", 1, RenderTypes.HELPER)]), explanations.jarvisWalk));
+
     var nextIdx = (candidateIdx + 1) % hull.length;
     var nextPoint = hull[nextIdx];
     var nextAngle = getAngleBetween3Points(p0, p1, nextPoint);
-    while (hull.length > 1 && nextAngle >= candidateAngle) {
+    while (hull.length > 1 && (nextAngle >= candidateAngle)) {
+        stepsObj.steps++;
+
         candidateIdx = nextIdx;
         candidatePoint = nextPoint;
         candidateAngle = nextAngle;
+
+        states.push(new State(temp.points, temp.edges.concat([new Edge(p1, candidatePoint, 5, "red", 1, RenderTypes.HELPER)]), explanations.jarvisWalk));
 
         nextIdx = (candidateIdx + 1) % hull.length;
         nextPoint = hull[nextIdx];
@@ -688,13 +813,14 @@ function jarvisWalk(p0, p1, hullStates, hull) {
 }
 exports.jarvisWalk = jarvisWalk;
 
-function jarvisBinary(p0, p1, hullStates, hull) { // yandere dev would be proud
+function jarvisBinary(hull, p0, p1, hullStates, stepsObj) { // yandere dev would be proud
     const hullPointsCount = hull.length;
 
     var candidate = null;
     var left = 0, right = hull.length - 1;
     const temp = states[states.length - 1];
     while (true) {
+        stepsObj.steps++;
         const mid1 = Math.ceil((left + right) / 2) % hullPointsCount, 
             mid2 = (mid1 + Math.ceil(hullPointsCount / 2)) % hullPointsCount;
 
@@ -747,7 +873,7 @@ function jarvisBinary(p0, p1, hullStates, hull) { // yandere dev would be proud
             }
         }
 
-        states.push(new State(temp.vertices, temp.edges.slice().concat([new Edge(p1, candidate ? candidate.point : v1, 5, "red")]), explanations.jarvisBinary));
+        states.push(new State(temp.points, temp.edges.concat([new Edge(p1, candidate ? candidate.point : v1, 5, "red", 1, RenderTypes.HELPER)]), explanations.jarvisBinary));
 
         if (candidate) {
             break;
@@ -789,102 +915,126 @@ function jarvisBinary(p0, p1, hullStates, hull) { // yandere dev would be proud
 }
 exports.jarvisBinary = jarvisBinary;
 
-function jarvisMarch(miniHulls, points, m) {
-    var p0 = new Point(-Infinity, 0);
-    var p1 = getP1(points);
-    
-    var hullPoints = [p1];
+function jarvisMarch(grahamHulls, hullPoints, H, stepsObj) {
     var hullStates = new Map();
-    for (const hull of miniHulls) {
+    for (const hull of grahamHulls) {
         hullStates.set(hull, 0);
     }
-    for (let i = 0; i < m; i++) {
-        let curBest = null;
-        
-        const temp = states.slice();
-        for (let j = 0; j < miniHulls.length; j++) {
-            const curHull = miniHulls[j];
+
+    for (let i = 0; i < H; i++) {
+        stepsObj.steps++;
+        const initialState = states.slice();
+        const p0 = getNextToTopOfStack(hullPoints),
+                p1 = getTopOfStack(hullPoints);
+        let currentBest = null;
+        for (let k = 0; k < grahamHulls.length; k++) {
+            stepsObj.steps++;
+            var bestOfGroup = (!options.cacheTangentPoints || i === 0) ? jarvisBinary(grahamHulls[k], p0, p1, hullStates, stepsObj) : jarvisWalk(grahamHulls[k], p0, p1, hullStates, stepsObj);
             
-            if (!chanImproved || i === 0) {
-                var bestOfHull = jarvisBinary(p0, p1, hullStates, curHull);
-            }
-            else {
-                var bestOfHull = jarvisWalk(p0, p1, hullStates, curHull);
-            }
-            
-            if (!curBest || bestOfHull.angle >= curBest.angle) {
-                // if two points have max angle, the furthest point wins as specified in chan's paper.
-                if (curBest && bestOfHull.angle === curBest.angle && getDistanceBetweenPoints(p1, bestOfHull) < getDistanceBetweenPoints(p1, curBest)) {
+            if (!currentBest || bestOfGroup.angle >= currentBest.angle) {
+                // if two points have max angle, the furthest point wins.
+                if (currentBest && bestOfGroup.angle === currentBest.angle && getDistanceBetweenPoints(p1, bestOfGroup) < getDistanceBetweenPoints(p1, currentBest)) {
                     break;
                 }
                 
-                curBest = bestOfHull;
+                currentBest = bestOfGroup;
             }
 
-            // states.push({vertices: states[states.length - 1].vertices, edges: states[states.length - 1].edges.slice().concat([new Edge(p1, bestOfHull.point, 5, "grey")])});
-            states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges.slice().concat([new Edge(p1, bestOfHull.point, 5, "grey")]), explanations.jarvisBinaryDone));
+            states.push(new State(states[states.length - 1].points, states[states.length - 1].edges.concat([new Edge(p1, bestOfGroup.point, 5, "grey", 1, RenderTypes.HELPER)]), explanations.jarvisTangentFound));
         }
         
-        hullPoints.push(curBest.point);
-        // states.push({vertices: temp[temp.length - 1].vertices.concat([new Point(curBest.point.x, curBest.point.y, 10, "purple")]), 
-        //     edges: temp[temp.length - 1].edges.slice().concat([new Edge(p1, curBest.point, 5, "black")])});
+        hullPoints.push(currentBest.point);
 
         const curExplanation = i === 0 ? explanations.foundMiniHullMax1 : explanations.foundMiniHullMax2;
-        states.push(new State(temp[temp.length - 1].vertices.concat([new Point(curBest.point.x, curBest.point.y, 10, "purple")]), 
-            temp[temp.length - 1].edges.slice().concat([new Edge(p1, curBest.point, 5, "black")]), curExplanation));
+        states.push(new State(initialState[initialState.length - 1].points.concat([new Point(currentBest.point.x, currentBest.point.y, 10, "purple", 1, RenderTypes.HULL)]), 
+            initialState[initialState.length - 1].edges.concat([new Edge(p1, currentBest.point, 5, "black", 1, RenderTypes.HULL)]), curExplanation));
         
-        if (hullPoints[0] === getTopOfStack(hullPoints)) {
-            // hullPoints.pop();
+        if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
             states[states.length - 1].text = explanations.foundConvexHull;
-            break;
+            return;
         }
-        
-        p0 = getNextToTopOfStack(hullPoints);
-        p1 = getTopOfStack(hullPoints);
     }
-
-    return hullPoints;
 }
 exports.jarvisMarch = jarvisMarch;
 
-function chan(points) {
-    var originalVertices = [];
+function chan(points, stepsObj) {
+    var originalPoints = [];
     for (const p of points) {
-        originalVertices.push(new Point(p.x, p.y, p.radius, p.color));
+        originalPoints.push(new Point(p.x, p.y, p.radius, p.color, p.opacity, p.type));
     }
-
-    states.push(new State(originalVertices, [], explanations.generatedRandomPoints));
+    states.push(new State(originalPoints, [], explanations.generatedRandomPoints));
+    
+    var p1 = getP1(points, stepsObj);
+    var p0 = new Point(p1.x - 1, p1.y);
     var n = points.length;
-
-    var iterations = !increaseMSlower ? Math.ceil(Math.log2(Math.log2(n))) : Math.ceil(Math.log2(n));
-    for (let t = 1; t <= iterations; t++) {
+    var hullPoints = [p0, p1];
+    var stop = !options.modifiedM1 ? Math.ceil(Math.log2(Math.log2(n))) : Math.ceil(Math.log2(n));
+    var grahamHulls = [];
+    for (let t = 1; t <= stop; t++) {
         console.log("Number of iterations gone through: " + t);
-        const m = !increaseMSlower ? Math.pow(2, Math.pow(2, t)) : Math.pow(2, t);
-        const groupCount = Math.ceil(n / m);
+        stepsObj.steps++;
 
-        var groups = splitPoints(points, m);
-        var partitionedVertices = [];
-        for (const group of groups) {
+        if (options.removeNonHullGrahamPoints && grahamHulls.length) {
+            points = grahamHulls.reduce(function (newPoints, hull) {
+                stepsObj.steps++;
+                newPoints.push.apply(newPoints, hull);
+                return newPoints;
+            }, []);
+            
+            n = points.length;
+        }
+
+        var m = Math.min(n, Math.pow(2, Math.pow(2, t)));
+        if (options.modifiedM1) {
+            m = Math.min(n, Math.pow(2, t));
+        }
+        else if (options.modifiedM2) {
+            m = Math.min(n, Math.pow(2, Math.pow(t, 2)));
+        }
+        
+        var splitPointsArray = splitPoints(points, m, stepsObj);
+        
+        // visualize points being partitioned into subsets
+        var partitionedPoints = [];
+        for (const group of splitPointsArray) {
             for (const p of group) {
-                partitionedVertices.push(new Point(p.x, p.y, p.radius, p.color));
+                partitionedPoints.push(new Point(p.x, p.y, p.radius, p.color, p.opacity, p.type));
             }
         }
-
-        states.push(new State(partitionedVertices, [], explanations.partition));
-
-        var miniHulls = [];
-        for (let i = 0; i < groups.length; i++) {   // find mini hulls for jarvis march
-            miniHulls.push(grahamScan(groups[i]));
+        states.push(new State(partitionedPoints, [], explanations.partition));
+        
+        if (t > 1 && options.cacheHullPoints) {
+            let hullEdges = [];
+            for (let i = 1; i < hullPoints.length; i++) {
+                hullEdges.push(new Edge(hullPoints[i - 1], hullPoints[i], 5, "black", 0.5, RenderTypes.HULL));
+            }
+            if (hullEdges) {
+                states.push(new State(partitionedPoints.concat(hullPoints.map((p) => new Point(p.x, p.y, 10, "purple", 0.5, RenderTypes.HULL))), hullEdges, explanations.cachedHullPoints));
+            }
         }
-
-        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges, explanations.grahamScanDone));
-        let hullPoints = jarvisMarch(miniHulls, points, m);
-        if (arePointsEqual(hullPoints[0], hullPoints[hullPoints.length - 1])) {
-            hullPoints.pop();   // remove duplicate vertex
+        
+        grahamHulls = [];
+        for (let i = 0; i < splitPointsArray.length; i++) {   // find minihulls
+            stepsObj.steps++;
+            var grahamHull = grahamScan(splitPointsArray[i], stepsObj);
+            grahamHulls.push(grahamHull);
+        }
+        states.push(new State(states[states.length - 1].points, states[states.length - 1].edges, explanations.grahamScanDone));
+        
+        var H = !options.modifiedH ? m : (Math.ceil(m / Math.log2(m)));
+        jarvisMarch(grahamHulls, hullPoints, H, stepsObj);
+        if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
+            hullPoints.pop();   // remove duplicate hull point
+            hullPoints.shift(); // remove dummy point (initial p0)
             return hullPoints;
         }
 
-        states.push(new State(originalVertices, [], explanations.increaseMAndRestart));
+        if (!options.cacheHullPoints) {
+            hullPoints = [p0, p1];
+        }
+
+        // clear canvas for next iteration of chan's
+        states.push(new State(originalPoints, [], explanations.increaseMAndRestart));
         clearRender();
     }
 }
@@ -896,80 +1046,8 @@ CHAN'S ALGORITHM END
 
 
 
-/*
-IMPROVED CHAN'S ALGORITHM BEGIN
-*/
-
-/**
- * Compute the convex hull of a set of points using a modified version of chan's algorithm
- * Modifications include:
- * 1. Cache the hull points found during previous iterations.
- * 2. Only consider points found using graham's algorithm during subsequent iterations
- * 3. Modify the value of m to be the min between 2 ^ (t ^ 2) and n.
- * @param grid
- * @returns
- */
- function chanWithHullCache(points) {
-    var originalVertices = [];
-    for (const p of points) {
-        originalVertices.push(new Point(p.x, p.y, p.radius, p.color));
-    }
-    states.push(new State(originalVertices, [], explanations.generatedRandomPoints));
-
-    var p1 = getP1(points);
-    var p0 = new Point(p1.x - 1, p1.y);
-    var n = points.length;
-    var stop = Math.ceil(Math.log2(Math.log2(n)));
-    var hullPoints = [p0, p1];
-    var grahamHulls = [];
-    for (var i = 1; i <= stop + 1; i++) {
-        if (grahamHulls.length) {
-            points = grahamHulls.reduce(function (newPoints, hull) {
-                newPoints.push.apply(newPoints, hull);
-                return newPoints;
-            }, []);
-        }
-
-        n = points.length;
-        var m = Math.min(Math.pow(2, Math.pow(i, 2)), n);
-        var splitPointsArray = splitPoints(points, m);
-        var partitionedVertices = [];
-        for (const group of splitPointsArray) {
-            for (const p of group) {
-                partitionedVertices.push(new Point(p.x, p.y, p.radius, p.color));
-            }
-        }
-        states.push(new State(partitionedVertices, [], explanations.partition));
-
-        grahamHulls = [];
-        for (var i_1 = 0; i_1 < splitPointsArray.length; i_1++) {
-            var grahamHull = grahamScan(splitPointsArray[i_1]);
-            grahamHulls.push(grahamHull);
-        }
-        states.push(new State(states[states.length - 1].vertices, states[states.length - 1].edges, explanations.grahamScanDone));
-
-        jarvisMarch(grahamHulls, hullPoints, m);
-        // TODO: jarvisMarch functions differ. one returns while the other updates as reference.
-        if (arePointsEqual(hullPoints[1], hullPoints[hullPoints.length - 1])) {
-            // get rid of the fake point at the start for only the first iteration
-            hullPoints.shift();
-            return hullPoints;
-        }
-
-        states.push(new State(originalVertices, [], explanations.increaseMAndRestart));
-        clearRender();
-    }
-}
-exports.chanWithHullCache = chanWithHullCache;
-
-/*
-IMPROVED CHAN'S ALGORITHM END
-*/
-
-
-
-var vertexCountFormSubmit = document.getElementById("vertex-count-form-submit");
-vertexCountFormSubmit.onclick = function(event) {
+var pointCountFormSubmit = document.getElementById("point-count-form-submit");
+pointCountFormSubmit.onclick = function(event) {
     event.preventDefault();
     document.getElementById("next-step").disabled = false;
     document.getElementById("end-step").disabled = false;
@@ -981,12 +1059,16 @@ vertexCountFormSubmit.onclick = function(event) {
     clearRender();
     stepIdx = 0;
     
-    const vertexCountInput = document.getElementById("vertex-count-input");
-    const vertexCount = Number(vertexCountInput.value);
-    if (vertexCount >= vertexCountInput.min && vertexCount <= vertexCountInput.max) {
-        var vertexSet = generateRandomPoints(vertexCount);
-        const convexHull = chan(vertexSet);
+    const pointCountInput = document.getElementById("point-count-input");
+    const pointCount = Number(pointCountInput.value);
+    if (pointCount >= pointCountInput.min && pointCount <= pointCountInput.max) {
+        var pointSet = generateRandomPoints(pointCount);
+        const convexHull = chan(pointSet, {steps: 0});
     }
     
     renderState(states[stepIdx]);
 }
+
+// TODO: maybe we can merge both chan's functions...
+// TODO: handle degenerate cases.
+// TODO: better html and css for demo
