@@ -22,7 +22,7 @@ exports.foundMiniHullMax1 = lines("With all candidate points found for each mini
 
 exports.foundMiniHullMax2 = lines("Another hull point is found. We now update <em>p<sub>0</sub></em> to be <em>p<sub>1</sub></em>, and <em>p<sub>1</sub></em> to be the new convex hull point we just found. Now, repeat the same process with the new points mentioned to find the next convex hull point. We repeat until we've either reached <em>m</em> and did not finish the convex hull yet, or the convex hull is fully constructed, i.e., the last hull point connects with the very first hull point.");
 
-exports.increaseMAndRestart = lines("The number of iterations will now exceed <em>H</em> and the convex hull is not constructed yet, so we have to increase <em>H</em> and restart from the beginning, i.e., when the points were uncolored.");
+exports.increaseMAndRestart = lines("The number of iterations will now exceed <em>m</em> and the convex hull is not constructed yet, so we have to increase <em>m</em> and restart from the beginning, i.e., when the points were uncolored.");
 
 exports.foundConvexHull = lines("Convex hull successfully constructed.", "Note that with standard Chan's Algorithm, the amount of points that we would need to generate to see more than three passes of Chan's (a pass being every time <em>m</em> is updated) is too much for most machines to handle. If you generate the maximum number of points specified in this demo, you'll find that it won't take more than three passes to construct the convex hull.", "Chan's Algorithm does have extensions and modifications, and we implemented some of them in this demo so that you can select them to see the differences compared to standard Chan's Algorithm. For example, binary search turns out to be unnecessary, and so we can shave off a <em>log</em> factor when we're finding the candidate point in each minihull.");
 
@@ -438,11 +438,12 @@ var checkbox2 = navCheckboxes1.append("div").attr("class", "form-check");
         .attr("id", "info-icon")
         .attr("class", "fa-solid fa-circle-info")
         .attr("data-bs-toggle", "tooltip")
-        .attr("data-bs-original-title", "Standard Chan's Algorithm uses <em>m = 2<sup>2<sup>t</sup></sup></em>. TODO: time complexity")
+        .attr("data-bs-original-title", "Standard Chan's Algorithm uses <em>m = 2<sup>2<sup>t</sup></sup></em>. We suggest using this with the other options that are related to caching points and discarding non-hull points.")
         .attr("data-bs-html", true);
 
 var checkbox3 = navCheckboxes1.append("div").attr("class", "form-check");
-    checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "modified-H");
+    checkbox3.append("input").attr("class", "form-check-input").attr("type", "checkbox").attr("id", "modified-H")
+        .attr("disabled", true);
     checkbox3.append("label")
         .attr("class", "form-check-label")
         .attr("for", "modified-H")
@@ -451,7 +452,7 @@ var checkbox3 = navCheckboxes1.append("div").attr("class", "form-check");
         .attr("id", "info-icon")
         .attr("class", "fa-solid fa-circle-info")
         .attr("data-bs-toggle", "tooltip")
-        .attr("data-bs-original-title", "Rather than using <em>m = H</em>, use <em>H = m / logm</em>")
+        .attr("data-bs-original-title", "Rather than using <em>m = H</em>, use <em>H = m / logm</em> <br>TODO: temporary. re-enable when we implement it in a working state.")
         .attr("data-bs-html", true);
 
 var checkbox4 = navCheckboxes1.append("div").attr("class", "form-check");
@@ -946,13 +947,13 @@ function jarvisBinary(hull, p0, p1, hullStates, stepsObj) { // yandere dev would
 }
 exports.jarvisBinary = jarvisBinary;
 
-function jarvisMarch(grahamHulls, hullPoints, H, stepsObj) {
+function jarvisMarch(grahamHulls, hullPoints, m, stepsObj) {
     var hullStates = new Map();
     for (const hull of grahamHulls) {
         hullStates.set(hull, 0);
     }
 
-    for (let i = 0; i < H; i++) {
+    for (let i = 0; i < m; i++) {
         stepsObj.steps++;
         const initialState = states.slice();
         const p0 = getNextToTopOfStack(hullPoints),
@@ -1022,9 +1023,9 @@ function chan(points, stepsObj) {
         else if (options.modifiedM2) {
             m = Math.min(n, Math.pow(2, Math.pow(t, 2)));
         }
-        
+
         var splitPointsArray = splitPoints(points, m, stepsObj);
-        
+
         // visualize points being partitioned into subsets
         var partitionedPoints = [];
         for (const group of splitPointsArray) {
@@ -1033,7 +1034,7 @@ function chan(points, stepsObj) {
             }
         }
         states.push(new State(partitionedPoints, [], explanations.partition));
-        
+
         if (t > 1 && options.cacheHullPoints) {
             let hullEdges = [];
             for (let i = 1; i < hullPoints.length; i++) {
@@ -1043,7 +1044,7 @@ function chan(points, stepsObj) {
                 states.push(new State(partitionedPoints.concat(hullPoints.map((p) => new Point(p.x, p.y, 10, "purple", 0.5, RenderTypes.HULL))), hullEdges, explanations.cachedHullPoints));
             }
         }
-        
+
         grahamHulls = [];
         for (let i = 0; i < splitPointsArray.length; i++) {   // find minihulls
             stepsObj.steps++;
@@ -1051,9 +1052,8 @@ function chan(points, stepsObj) {
             grahamHulls.push(grahamHull);
         }
         states.push(new State(states[states.length - 1].points, states[states.length - 1].edges, explanations.grahamScanDone));
-        
-        var H = !options.modifiedH ? m : (Math.ceil(m / Math.log2(m)));
-        jarvisMarch(grahamHulls, hullPoints, H, stepsObj);
+
+        jarvisMarch(grahamHulls, hullPoints, m, stepsObj);
         if (arePointsEqual(hullPoints[1], getTopOfStack(hullPoints))) {
             hullPoints.pop();   // remove duplicate hull point
             hullPoints.shift(); // remove dummy point (initial p0)
@@ -1100,7 +1100,6 @@ pointCountFormSubmit.onclick = function(event) {
     renderState(states[stepIdx]);
 }
 
-// TODO: maybe we can merge both chan's functions...
 // TODO: handle degenerate cases.
 // TODO: better html and css for demo
 },{"./explanations":1}]},{},[2]);
