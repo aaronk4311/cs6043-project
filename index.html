@@ -14,7 +14,7 @@
 </head>
 
 <body>
-    <header class="navbar navbar-expand-lg bg-light navbar-light">
+    <header class="navbar navbar-expand-lg bg-light navbar-light" id="chan-header">
         <nav class="container-sm">
             <div id="bdNavbar" class="collapse navbar-collapse">
                 <a class="navbar-brand" href="#">Home</a>
@@ -27,54 +27,97 @@
         </nav>
     </header>
 
-    <div class="container-sm py-md-3">
-        <h2>Introduction</h2><hr>
+    <div class="container-sm">
+        <h3>Introduction</h3><hr>
         <p>
-            <a href="https://en.wikipedia.org/wiki/Chan%27s_algorithm">Chan's algorithm</a> partitions the set of \(n\) points \(P\) into \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) groups of size at most \(m\) each. For each group \(P_1, P_2, ..., P_{\lceil n/m \rceil}\), we compute the convex hull. After the end of this step, we end up with \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) <i>mini</i> hulls. The figure below is an example with the outcome after this first step, i.e., we end up with four subsets of \(P\) each with \(\leq m\) points (and the mini hulls are constructed).<br>
+            Given a set of finite points \(P\), its <a class="reference" href="https://en.wikipedia.org/wiki/Convex_hull">convex hull</a> \(\textrm{conv}(P)\) is a <a class="reference" href="https://en.wikipedia.org/wiki/Simple_polygon">simple polygon</a> that is convex (all interior angles are \(\leq 180^\circ\)) and encloses all of the points. Let's imagine that we punch some nails into a board and then stretch a rubberband around the set of nails such that each nail is within this rubberband. The resulting shape formed by the rubberband when we let it collapse is the convex hull of the set of nails.
+        </p>
+        <p>
+            Two well-known algorithms, <a class="reference" href="https://en.wikipedia.org/wiki/Graham_scan">Graham Scan</a> and <a class="reference" href="https://en.wikipedia.org/wiki/Gift_wrapping_algorithm">Jarvis' March</a> can construct \(\textrm{conv}(P)\) in \(O(n \log n)\) and \(O(nh)\) time respectively. The latter of the two algorithms is what we call an output-sensitive algorithm, i.e., the output size factors into the overall runtime. In the context of finding a convex hull, the output size is the number of convex hull points \(h\). In the worst case, every point is on the convex hull, so Jarvis' March would do \(O(n^2)\) work. In terms of runtime, Jarvis' March is only worth using over Graham Scan if \(h < \log n\), otherwise the runtime would not make using it worthwhile over Graham Scan.
+        </p>
+        <p>
+            In the following section, we go over another convex hull algorithm, for a set of points, that combines both Graham Scan and Jarvis' March to achieve an overall runtime of \(O(n \log h)\).
+        </p>
+    </div>
+
+    <div class="container-sm">
+        <h3>Chan's Algorithm</h3><hr>
+        <p>
+            Before we go through <a class="reference" href="https://en.wikipedia.org/wiki/Chan%27s_algorithm">Chan's algorithm</a>, it is highly recommended to review Graham Scan and Jarvis' March. Chan's algorithm uses standard Graham Scan to construct the minihulls and a modified version of Jarvis' March to find the edges of \(\textrm{conv}(P)\). In addition, Chan's paper mentions doing a binary search on each minihull to find their lower tangents, which will compete to become the next hull edge while we are building \(\text{conv}(P)\); it is therefore also highly recommended to review how binary search and find upper and lower tangents on simple polygons. Lastly, we will also be building \(\textrm{conv}(P)\) in CCW order, which is why we mentioned finding lower tangents as opposed to the upper tangents.
+        </p>
+        <p>
+            Chan's algorithm starts off with \(P\) on a plane, then partitions it into \(\Bigl\lceil n/m \Bigr\rceil\) groups of size at most \(m\) each. For each subset \(S_1, S_2, ..., S_{\lceil n/m \rceil}\), we run Graham Scan to find its own convex hull (call these the minihulls). Once we finish running Graham Scan on all subsets, we end up with \(\Bigl\lceil n/m \Bigr\rceil\) minihulls. In the example below, \(P\) is divided into four subsets <br>
             <!-- TODO: use picture from actual demo once that's working -->
             <center><img src="images/fig1.png"></center><br>
 
             <!-- TODO: details in between -->
 
-            Now that we have the mini hulls, pick \(x_{max}\)
-            
-            On a high-level overview, Chan's algorithm goes through the following steps to achieve a convex hull of \(P\):
+            Now that we have the minihulls, we can begin the next step, i.e., running a modified version of Jarvis' March on the minihulls. First, set \(m = 2^{2^t}\) where \(t = 1\) at the start, and \(1 \leq t \leq \lceil \log\log h \rceil\) where \(h\) is the number of points on the convex hull of \(P\) (we'll see why this is the range of \(t\) later). Now, let point \(p_0 = (-\infty, 0)\). Then, pick an extreme point \(p_1\) on \(P\) (we'll use the lowest \(y\) point \(y_{min}\)). Note that in the Graham Scan step, the extreme point we chose in each subset could have also been its respective lowest \(y\) point. Then, we could have just updated \(y_{min}\) while we were processing each subset. So, with \(p_0\) and \(p_1\) established, we now compute the lower tangent point on each minihull using binary search. Of all these points found, the next point \(p \in P\) to make it onto \(\textrm{conv}(P)\) is the one that maximizes \(\angle{p_0p_1p}\) where \(p \neq p_1\). After finding the new hull point, call it \(p_2\), we repeat with \(p_0 = p_1\) and \(p_1 = p_2\) until we finish constructing \(\textrm{conv}(P)\) or we exceed \(m\) iterations, i.e., found \(m\) hull edges (\(m + 1\) hull points) but still don't have \(\textrm{conv}(P)\) yet. Each time we still don't have the convex hull of \(P\) yet after \(m\) iterations, we restart, from when \(P\) was not partitioned into subsets yet, with \(t\) one greater than previously.
+        </p>
+        <p>
+            Before analyzing the time complexity for one iteration of Chan's algorithm, we will mention how to handle collinear points. If more than one point maximizes \(\angle{p_0p_1p}\) during the step where we pick the next hull edge in Jarvis' March, then we will pick the point farthest from \(p_1\). We should not choose to include all such points in \(\textrm{conv}(P)\) as that would break one of the requirements for convex hulls, i.e., a convex hull of a shape is the smallest <a class="reference" href="https://en.wikipedia.org/wiki/Convex_set">convex set</a> that contains it<sup><a class="reference" href="#cite-1">[1]</a></sup>.
+        </p>
+        <p>
+            We now go over the time complexity analysis for each iteration of \(t\) (not total work, yet) in Chan's algorithm.
             <ol>
-                <li>Parition \(P\) into \(\Bigl\lceil \dfrac{n}{m} \Bigr\rceil\) groups of size at most \(m\) each.</li>
-                <li>Use Graham's Scan to find the convex hull of each group.</li>
-                <li>Use Gift Wrapping to compute the convex hull of \(P\).</li>
+                <li class="chan-list">Generating the set of \(n\) points \(P\) and then partitioning it into \(\lceil n/m \rceil\) subsets both take \(O(n)\) time each.</li>
+                <li class="chan-list">Graham Scan: Computing the minihull for each subset \(S_1, S_2, ..., S_{\lceil n/m \rceil}\) of size \(\leq m\) using Graham Scan takes \(O(m \log m)\) time each. There are \(\lceil n/m \rceil\) subsets, so total work here is \(O(\dfrac{n}{m} \cdot m \log m) = O(n \log m)\).</li>
+                <li class="chan-list">Jarvis' March: Binary search each of the minihulls to find the lower tangents and then choose the one that maximizes \(\angle{p_0p_1p}\) as mentioned before. This takes \(O(\log m)\) for each minihull, of which there are \(O(n/m)\) of them so work here is \(O(\dfrac{n}{m} \cdot \log m)\). After all tangents have been found, we pick the one with the maximum angle of all, which takes \(O(n/m)\). So, total work done here is \(O(\dfrac{n}{m} + \dfrac{n}{m} \log m)\).</li>
+                <li class="chan-list">\(m\) Iterations of Jarvis' March: Repeat (3) until convex hull found or we realize \(m\) is not large enough, i.e., \(m\) times, so work done across \(m\) iterations in (3) is \(O(m \cdot \dfrac{n}{m} + m \cdot \dfrac{n}{m} \log m) = O(n \log m)\).</li>
             </ol>
-
-            Several questions:<br>
-            <ul>
-                <li>How do we pick \(m\)?</li>
-                <li>How do we start gift wrapping after computing the mini hulls?</li>
-                <li>How do the steps introduced above lead to an \(O(n \log h)\) time algorithm for constructing convex hulls?</li>
-            </ul>
-
-            In the following sections, we explain the algorithm as described in Chan's paper, provide visualizations for each step of the algorithm, mention alternative solutions for certain steps, and go over extensions proposed by Chan.
+        </p>
+        <p>
+            We can now sum up the work for every step and see that the total work done for each iteration of \(t\) is  \(O(n) + O(n \log m) + O(n \log m) = O(n \log m)\). Again, this is not the final time complexity of Chan's algorithm, as we only analyzed the work done in each individual iteration. If we picked \(m = h\) from the start, then we only have one iteration, and we have our overall runtime of \(O(n \log h)\). But, how do we know how many points are on the convex hull? We don't. So, Chan cleverly chose \(m = 2^{2^t}\) for each iteration of \(t\). Let's see how this helps us achieve \(O(n \log h)\) overall.
+        </p>
+        <p>
+            Since \(m = 2^{2^t}\), the amount of work done in each iteration can be written as \(O(n \log m) = O(n \log 2^{2^t})\). Applying a couple of \(log\) rules, \(\log_a{a^b} = b \log_a{a}= b\), we can simplify it further to get \(O(n \cdot 2^t)\). How many iterations can we go through with \(t\)? We know that \(m = 2^{2^t} \geq h\), so \(h \leq 2^{2^t}\). Then, take the \(\log\) of both sides twice to get \(\log\log h \leq t\). Note that if \(t\) does exceed \(\log\log h\), it only overshoots once, i.e., if the current iteration does not find \(\textrm{conv}(P)\), then the next iteration will (this is important since the total work we sum up forms a geometric series). Using this fact, we can say that \(t\) is in the range of \(1 \leq t \leq \lceil \log\log h \rceil\).
+        </p>
+        <p>
+            We can finally find the total work done in Chan's algorithm over all iterations. Notice that if there was no limit for how much \(t\) could overshoot, the total work would be \(O(n \log n)\).
+            <center>
+                $$\begin{aligned}\sum_{t=1}^{\lceil \log\log h \rceil} n \cdot 2^t &\leq n \cdot 2(2^{\lceil \log\log h \rceil}) \\ 
+                    &= n \cdot 2(\log h) \\
+                    &= O(n \log h)
+                \end{aligned}$$
+            </center>
+        </p>
+        <p>
+            We just walked through Chan's algorithm as described in his paper. In the following sections, we mention alternative solutions for certain steps, and go over several extensions.
         </p>
     </div>
 
-    <div class="container-sm py-md-3">
-        <h2>The Algorithm</h2><hr>
+    <div class="container-sm">
+        <h3>Extensions and Modifications for Chan's Algorithm</h3><hr>
         <p>
-            Now that we've given a high-level overview of how Chan's algorithm runs, we now go into the details of how the algorithm ultimately constructs the convex hull in \(O(n \log h)\) time.
+            The time complexity to find a convex hull has a lower bound of \(\Omega(n \log n)\)<sup><a class="reference" href="#cite-2">[2]</a></sup>, but in the case of convex hull algorithms that are output-sensitive, such as Kirkpatrick-Seidel "Ultimate" algorithm and Chan's algorithm, the complexity is defined by both the input size and number of hull points. For such convex hull algorithms, the lower bound was proven to be \(\Omega(n \log h)\)<sup><a class="reference" href="#cite-3">[3]</a></sup>. Because Chan's algorithm is already worst-case optimal, we definitely cannot do better than \(O(n \log h)\), so the modifications mentioned in this section will only improve upon the runtime of certain steps and won't affect the overall time complexity.
         </p>
-    </div>
-
-    <div class="container-sm py-md-3">
-        <h2>Extensions</h2><hr>
         <p>
-            <!-- Extension ideas: -->
+            Below are several optimizations we can do to speed up certain steps in Chan's algorithm.
+            <ol>
+                <li class="chan-list">In (3) of the time complexity analysis part, picking the next hull edge from the candidate points found through computing the lower tangents can be done by simply comparing the angles and updating along the way, rather than after all lower tangents have been computed. This saves an additional \(O(n/m)\) work (and space since we don't have to cache the tangent points) just to iterate through \(\lceil n/m \rceil\) tangents to pick the hull edge. This is a very simple improvement, so our implementation of standard Chan's algorithm already incorporates this.</li>
+                <li class="chan-list">If \(m \geq n\), then \(P\) will be partitioned into \(\lceil n/m \rceil = 1\) subset. So, finding the minihull for it would already give us \(\textrm{conv}(P)\), i.e., just do Graham Scan and skip the Jarvis' March step. This saves us from having to do an additional \(O(h \log m)\) work for the iteration this happens on.</li>
+                <li class="chan-list">While computing the minihulls in the Graham Scan step, we can discard points from \(P\) that did not make it into its respective minihull. So, if \(m\) is not large enough to compute \(\textrm{conv}(P)\) at that iteration, the next iteration of Chan's algorithm will have fewer points to process.</li>
+                <li class="chan-list">Typically, implementations of Chan's algorithm makes the subset size \(m\) to be the same as the number of hull edges we'll look for in each iteration of Chan's. However, if we separate the two, i.e., keep subset sizes to be \(\leq m\), but make the number of hull edges we'll look for be \(H = m/\log m\), we can reduce the work done in Jarvis' March from \(O(m \cdot \dfrac{n}{m} \log m) = O(n \log m)\) to \(O(H \cdot \dfrac{n}{m} \log m) = O(n)\).</li>
+                <li class="chan-list">In the Jarvis' March step, it turns out we don't need to binary search each time on the minihulls to find the lower tangents. Instead, we only binary search once to find the first hull edge and cache the tangent points found. After the first hull edge has been found, looking for subsequent hull edges will only take \(O(n/m)\) each; we achieve this because the next tangent on a minihull will either remain the same or be one of the successor points in the CCW direction. Each point will not be considered as a tangent point for that minihull more than twice as well. If \(\exists\) some point that was considered more than twice, then that would mean we completed more than one revolution around the minihull, which is not possible since \(\textrm{conv}(P)\) is a simple polygon. Combined with the improvement mentioned here in (1), the time to find a hull edge after the first one comes down from \(O(\dfrac{n}{m} + \dfrac{n}{m} \log m)\) to \(O(n/m)\). For a single iteration of Chan's, we get \(O(m \cdot \dfrac{n}{m}) = O(n)\) work in the step where we find the \(m\) hull edges. If we combined this with optimization (4), where \(m \neq H\) but rather \(H = \dfrac{m}{\log m}\), the total work to find \(H\) hull edges in a single iteration of Chan's comes down further to \(O(H \cdot \dfrac{n}{m}) = O(\dfrac{n}{\log m})\).</li>
+                <li class="chan-list">The standard version of Chan's repeats finding hull edges found in a previous iteration. Rather than repeat looking for those hull edges, we keep them and continue the next iteration of Chan's from the last \(p_0\) and \(p_1\) saved.</li>
+            </ol>
+        </p>
+        <p>
             <!-- 1. do we really need to start over from scratch if m is not large enough? -->
-            <!-- 2. is binary searching needed to find tangents? could probably improve that part. -->
-            <!-- Several options: brute force all tangents, binary search, or notice that on the next iteration, each tangent is either the same or one off in CCW direction -->
-            <!-- 3. mention how to handle collinear cases and other edge cases. -->
-            <!-- 4. how to avoid checking angle involving two of the same points in binary search step? -->
-            <!-- 5. need to store mini hulls' points in CCW order with lowest y-value point at first index to avoid dealing with out-of-bounds indices in binary search. -->
-            <!-- 6. if there's only one hull, just return the hull points of that single hull since that is the CH of the input. no need to run binary search or search for hull points because we already found them -->
+            <!-- 2. mention how to handle collinear cases and other edge cases. -->
+            <!-- 3. how to avoid checking angle involving two of the same points in binary search step? -->
+            <!-- 4. need to store mini hulls' points in CCW order with lowest y-value point at first index to avoid dealing with out-of-bounds indices in binary search. -->
+            <!-- Several options to visualize: brute force all tangents, binary search, or notice that on the next iteration, each tangent is either the same or one off in CCW direction -->
         </p>
+    </div>
+
+    <div class="container-sm">
+        <h3>References</h3><hr>
+        <ol>
+            <li id="cite-1">Wikipedia <a href="https://en.wikipedia.org/wiki/Convex_hull#Definitions">Convex Hull</a> Page, Section 1. Definitions</li>
+            <li id="cite-2">Souvaine, Diane. <a href="https://www.cs.tufts.edu/comp/163/notes04/notes2.pdf">Finding Convex Hulls</a>, Section 2. Lower Bound for Convex Hulls</li>
+            <li id="cite-3">Mount, Dave. <a href="https://www.cs.umd.edu/class/spring2020/cmsc754/Lects/lect03-hulls-bounds.pdf">Convex Hulls: Lower Bounds and Output Sensitivity</a>, pp. 6-9</li>
+        </ol>
     </div>
 
     <!-- Bootstrap Bundle with Popper -->

@@ -9,22 +9,61 @@ html, body {
     margin: 0;
 }
 
-canvas {
-    background-color: #000;
-    /* width:  100%;
-    height: 100%; */
-    margin: 0;
+a.reference {
+    text-decoration: none;
 }
-
-/* demo styling */
 
 rect {
     fill: none;
     stroke: black;
 }
 
-#demo-container {
-    text-align: center;
+#demo-container-column1 {
+    max-width: 25%;
+    max-height: 100%;
+    padding: 0px;
+}
+
+#demo-container-column1 #text {
+    /* line-height: 1; */
+    margin: 0px 20px;
+}
+
+#demo-container-column1 #text p {
+    margin: 20px 20px;
+}
+
+#demo-container-column2 {
+    max-width: 75%;
+    max-height: 100%;
+    padding: 0px;
+}
+
+#nav-container {
+    max-width: 100%;
+    padding-bottom: 5px;
+}
+
+#info-icon {
+    color: lightgrey;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.chan-list {
+    margin: 10px;
+}
+
+.nav-checkboxes {
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 100%;
+}
+
+.tooltip-inner {
+    max-width: 100% !important;
 }
 
 /* vertex {
